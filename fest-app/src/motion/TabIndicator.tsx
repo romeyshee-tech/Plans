@@ -8,7 +8,7 @@ import Animated, {
   interpolate,
   Extrapolation,
 } from 'react-native-reanimated';
-import { theme } from '../theme';
+import { lightColors } from '../theme';
 import { springs } from './springs';
 import { useReduceMotion } from './a11y';
 
@@ -28,7 +28,7 @@ export const TabIndicator = ({
   count,
   activeIndex,
   containerWidth,
-  color = theme.colors.primary,
+  color = lightColors.primary,
   style,
   height,
   gap = 0,
@@ -77,7 +77,7 @@ const s = StyleSheet.create({
     left: 0,
     bottom: 0,
     borderRadius: 9999,
-    shadowColor: theme.colors.primary,
+    shadowColor: lightColors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 12,

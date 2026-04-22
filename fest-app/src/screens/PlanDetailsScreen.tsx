@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, FlatLi
 import * as Linking from 'expo-linking';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
-import { theme } from '../theme';
+import { theme, useThemeColors, type ThemeColors } from '../theme';
 import { usePlansStore } from '../stores/plansStore';
 import { useAuthStore } from '../stores/authStore';
 import { useFriendsStore } from '../stores/friendsStore';
@@ -18,10 +18,20 @@ import { Aurora, FadeIn, Pressable, Badge, TabIndicator, Tab, Confetti, hapticSu
 type Props = NativeStackScreenProps<PlansStackParamList, 'PlanDetails'>;
 
 const STATUS_LABELS: Record<string, string> = { going: 'Иду', thinking: 'Думаю', cant: 'Не могу', invited: 'Приглашение' };
-const STATUS_COLORS: Record<string, string> = { going: theme.colors.going, thinking: theme.colors.thinking, cant: theme.colors.cant, invited: theme.colors.invited };
+const getStatusColor = (colors: ThemeColors, key: string): string => {
+  switch (key) {
+    case 'going': return colors.going;
+    case 'thinking': return colors.thinking;
+    case 'cant': return colors.cant;
+    case 'invited': return colors.invited;
+    default: return colors.textTertiary;
+  }
+};
 const MAX_VOTES_PER_TYPE = 2;
 
 export const PlanDetailsScreen = ({ route, navigation }: Props) => {
+  const colors = useThemeColors();
+  const s = React.useMemo(() => makeStyles(colors), [colors]);
   const { planId } = route.params;
   const plans = usePlansStore((s) => s.plans);
   const messages = usePlansStore((s) => s.messages);
@@ -51,7 +61,7 @@ export const PlanDetailsScreen = ({ route, navigation }: Props) => {
 
   const plan = plans.find((p) => p.id === planId);
   if (!plan || !user) {
-    if (planLoading) return <View style={s.root}><Aurora /><ScreenContainer><View style={s.inner}><ActivityIndicator size="large" color={theme.colors.primary} style={s.loader} /></View></ScreenContainer></View>;
+    if (planLoading) return <View style={s.root}><Aurora /><ScreenContainer><View style={s.inner}><ActivityIndicator size="large" color={colors.primary} style={s.loader} /></View></ScreenContainer></View>;
     return <View style={s.root}><Aurora /><ScreenContainer><View style={s.inner}><EmptyState text={planError || 'План не найден'} /></View></ScreenContainer></View>;
   }
 
@@ -175,7 +185,7 @@ export const PlanDetailsScreen = ({ route, navigation }: Props) => {
               {participantUserIds.size >= 15 ? (
                 <Text style={s.modalEmpty}>Максимум участников</Text>
               ) : friendsLoading ? (
-                <ActivityIndicator size="small" color={theme.colors.primary} style={s.loader} />
+                <ActivityIndicator size="small" color={colors.primary} style={s.loader} />
               ) : inviteCandidates.length === 0 ? (
                 <Text style={s.modalEmpty}>Некого приглашать</Text>
               ) : (
@@ -207,6 +217,8 @@ export const PlanDetailsScreen = ({ route, navigation }: Props) => {
 };
 
 const AnimatedTabBar = ({ tab, onChange }: { tab: 'details' | 'chat'; onChange: (t: 'details' | 'chat') => void }) => {
+  const colors = useThemeColors();
+  const s = React.useMemo(() => makeStyles(colors), [colors]);
   const [barWidth, setBarWidth] = React.useState(0);
   const activeIndex = tab === 'details' ? 0 : 1;
   return (
@@ -219,7 +231,7 @@ const AnimatedTabBar = ({ tab, onChange }: { tab: 'details' | 'chat'; onChange: 
           count={2}
           activeIndex={activeIndex}
           containerWidth={barWidth}
-          color={theme.colors.primary}
+          color={colors.primary}
           style={s.tabIndicator}
         />
         <Pressable style={s.tab} onPress={() => onChange('details')} activeScale={0.97}>
@@ -253,6 +265,8 @@ const DetailsTab = ({ plan, isCreator, myStatus, onSetStatus, onVote, onUnvote, 
   onRemove?: (userId: string) => void;
   onLeave?: () => void;
 }) => {
+  const colors = useThemeColors();
+  const s = React.useMemo(() => makeStyles(colors), [colors]);
   const user = useAuthStore((s) => s.user);
   const navigation = useNavigation();
   const [propModalVisible, setPropModalVisible] = useState(false);
@@ -319,7 +333,7 @@ const DetailsTab = ({ plan, isCreator, myStatus, onSetStatus, onVote, onUnvote, 
             >
               <Text style={s.participantName}>{p.user?.name ?? '???'}{p.user_id === plan.creator_id ? ' (создатель)' : ''}</Text>
               <View style={s.participantRight}>
-                <Badge label={STATUS_LABELS[p.status]} color={STATUS_COLORS[p.status]} pulse={p.status === 'going'} />
+                <Badge label={STATUS_LABELS[p.status]} color={getStatusColor(colors, p.status)} pulse={p.status === 'going'} />
                 {isCreator && p.user_id !== plan.creator_id && onRemove && (
                   <Pressable onPress={() => onRemove(p.user_id)} style={s.removeBtn} activeScale={0.85} hitSlop={8}>
                     <Text style={s.removeBtnText}>✕</Text>
@@ -341,8 +355,8 @@ const DetailsTab = ({ plan, isCreator, myStatus, onSetStatus, onVote, onUnvote, 
             <Text style={s.sectionTitle}>Ваш статус</Text>
             <View style={s.statusRow}>
               {statusBtns.map((btn) => (
-                <Pressable key={btn.key} style={[s.statusBtn, myStatus === btn.key && { backgroundColor: STATUS_COLORS[btn.key] + '22', borderColor: STATUS_COLORS[btn.key] }]} onPress={() => onSetStatus(btn.key)} activeScale={0.94}>
-                  <Text style={[s.statusBtnText, myStatus === btn.key && { color: STATUS_COLORS[btn.key], fontWeight: '700' }]}>{btn.label}</Text>
+                <Pressable key={btn.key} style={[s.statusBtn, myStatus === btn.key && { backgroundColor: getStatusColor(colors, btn.key) + '22', borderColor: getStatusColor(colors, btn.key) }]} onPress={() => onSetStatus(btn.key)} activeScale={0.94}>
+                  <Text style={[s.statusBtnText, myStatus === btn.key && { color: getStatusColor(colors, btn.key), fontWeight: '700' }]}>{btn.label}</Text>
                 </Pressable>
               ))}
             </View>
@@ -438,9 +452,9 @@ const DetailsTab = ({ plan, isCreator, myStatus, onSetStatus, onVote, onUnvote, 
           <View style={s.modalContent}>
             <Text style={s.modalTitle}>{propType === 'place' ? 'Предложить место' : 'Предложить время'}</Text>
             {propType === 'place' ? (
-              <TextInput style={s.modalInput} placeholder="Название места" placeholderTextColor={theme.colors.textTertiary} value={propValue} onChangeText={setPropValue} autoFocus />
+              <TextInput style={s.modalInput} placeholder="Название места" placeholderTextColor={colors.textTertiary} value={propValue} onChangeText={setPropValue} autoFocus />
             ) : (
-              <TextInput style={s.modalInput} placeholder="Например: Суббота 18:00" placeholderTextColor={theme.colors.textTertiary} value={propTimeValue} onChangeText={setPropTimeValue} autoFocus />
+              <TextInput style={s.modalInput} placeholder="Например: Суббота 18:00" placeholderTextColor={colors.textTertiary} value={propTimeValue} onChangeText={setPropTimeValue} autoFocus />
             )}
             <View style={s.modalActions}>
               <TouchableOpacity style={s.modalCancelBtn} onPress={() => setPropModalVisible(false)}>
@@ -466,6 +480,8 @@ const ProposalCard = ({ proposal, userId, planId, onVote, onUnvote, isCreator, o
   votesUsed: number;
   maxVotes: number;
 }) => {
+  const colors = useThemeColors();
+  const s = React.useMemo(() => makeStyles(colors), [colors]);
   const hasVoted = proposal.votes?.some((v) => v.voter_id === userId);
   const voteCount = proposal.votes?.length ?? 0;
   const canVote = !hasVoted && votesUsed < maxVotes;
@@ -492,6 +508,8 @@ const ProposalCard = ({ proposal, userId, planId, onVote, onUnvote, isCreator, o
 };
 
 const ChatTab = ({ messages: msgs, input, setInput, onSend, sending, planId, onVote, onUnvote, userId }: { messages: Message[]; input: string; setInput: (v: string) => void; onSend: () => void; sending: boolean; planId: string; onVote: (planId: string, proposalId: string) => Promise<void>; onUnvote: (planId: string, proposalId: string) => Promise<void>; userId: string }) => {
+  const colors = useThemeColors();
+  const s = React.useMemo(() => makeStyles(colors), [colors]);
   const plans = usePlansStore((s) => s.plans);
   const plan = plans.find((p) => p.id === planId);
 
@@ -534,7 +552,7 @@ const ChatTab = ({ messages: msgs, input, setInput, onSend, sending, planId, onV
         );
       }} contentContainerStyle={s.chatList} inverted ListEmptyComponent={<EmptyState text="Нет сообщений" />} keyboardShouldPersistTaps="handled" />
       <View style={s.chatInputRow}>
-        <TextInput style={s.chatInput} placeholder="Сообщение..." placeholderTextColor={theme.colors.textTertiary} value={input} onChangeText={setInput} returnKeyType="send" onSubmitEditing={onSend} />
+        <TextInput style={s.chatInput} placeholder="Сообщение..." placeholderTextColor={colors.textTertiary} value={input} onChangeText={setInput} returnKeyType="send" onSubmitEditing={onSend} />
         <TouchableOpacity style={[s.sendBtn, sending && s.btnDisabled]} onPress={onSend} disabled={sending}>
           <Text style={s.sendBtnText}>{sending ? '...' : '→'}</Text>
         </TouchableOpacity>
@@ -543,101 +561,101 @@ const ChatTab = ({ messages: msgs, input, setInput, onSend, sending, planId, onV
   );
 };
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.colors.background },
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
   inner: { flex: 1 },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingRight: theme.spacing.lg },
   backBtn: { paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.xl, paddingBottom: theme.spacing.xs, ...Platform.select({ web: { paddingTop: theme.spacing.lg } }) },
-  backText: { ...theme.typography.body, color: theme.colors.primary, fontWeight: '700' },
-  shareBtn: { paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.xs, borderRadius: theme.borderRadius.full, borderWidth: 1, borderColor: theme.colors.primary + '55', marginTop: theme.spacing.md, ...Platform.select({ web: { marginTop: theme.spacing.sm } }) },
-  shareBtnText: { ...theme.typography.captionBold, color: theme.colors.primary, fontWeight: '700' },
+  backText: { ...theme.typography.body, color: colors.primary, fontWeight: '700' },
+  shareBtn: { paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.xs, borderRadius: theme.borderRadius.full, borderWidth: 1, borderColor: colors.primary + '55', marginTop: theme.spacing.md, ...Platform.select({ web: { marginTop: theme.spacing.sm } }) },
+  shareBtnText: { ...theme.typography.captionBold, color: colors.primary, fontWeight: '700' },
   heroBlock: { paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.md, paddingTop: theme.spacing.xs },
-  eyebrow: { fontFamily: theme.fonts.displayMedium, fontSize: 11, letterSpacing: 4, color: theme.colors.accent, textTransform: 'uppercase', marginBottom: 6 },
-  title: { fontFamily: theme.fonts.display, fontSize: Platform.OS === 'web' ? 36 : 30, lineHeight: Platform.OS === 'web' ? 40 : 34, color: theme.colors.primaryDark, letterSpacing: -1.2, marginBottom: 6 },
-  heroMeta: { fontSize: 13, fontWeight: '600', color: theme.colors.textSecondary, letterSpacing: 0.1 },
+  eyebrow: { fontFamily: theme.fonts.displayMedium, fontSize: 11, letterSpacing: 4, color: colors.accent, textTransform: 'uppercase', marginBottom: 6 },
+  title: { fontFamily: theme.fonts.display, fontSize: Platform.OS === 'web' ? 36 : 30, lineHeight: Platform.OS === 'web' ? 40 : 34, color: colors.primaryDark, letterSpacing: -1.2, marginBottom: 6 },
+  heroMeta: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, letterSpacing: 0.1 },
   tabRow: { marginHorizontal: theme.spacing.lg, marginBottom: theme.spacing.md, backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: theme.borderRadius.full, padding: 4, borderWidth: 1, borderColor: 'rgba(108,92,231,0.15)', ...Platform.select({ web: { backdropFilter: 'blur(16px)' } as any }) },
   tabsInner: { flexDirection: 'row', position: 'relative' },
   tabIndicator: { top: 0, bottom: 0, height: '100%' },
   tab: { flex: 1, paddingVertical: theme.spacing.sm, alignItems: 'center', justifyContent: 'center', borderRadius: theme.borderRadius.full },
   tabActive: { backgroundColor: 'transparent' },
-  tabText: { ...theme.typography.caption, color: theme.colors.textSecondary, fontWeight: '600' },
-  tabTextActive: { color: theme.colors.textInverse, fontWeight: '700' },
+  tabText: { ...theme.typography.caption, color: colors.textSecondary, fontWeight: '600' },
+  tabTextActive: { color: colors.textInverse, fontWeight: '700' },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.xxxl, ...Platform.select({ web: { paddingBottom: theme.spacing.xxl } }) },
-  linkedEvent: { backgroundColor: theme.colors.primaryLight + '15', borderRadius: theme.borderRadius.md, padding: theme.spacing.md, marginBottom: theme.spacing.lg },
-  linkedText: { ...theme.typography.caption, color: theme.colors.primary },
-  sectionTitle: { ...theme.typography.h4, color: theme.colors.textPrimary, marginBottom: theme.spacing.xs, marginTop: theme.spacing.sm },
+  linkedEvent: { backgroundColor: colors.primaryLight + '15', borderRadius: theme.borderRadius.md, padding: theme.spacing.md, marginBottom: theme.spacing.lg },
+  linkedText: { ...theme.typography.caption, color: colors.primary },
+  sectionTitle: { ...theme.typography.h4, color: colors.textPrimary, marginBottom: theme.spacing.xs, marginTop: theme.spacing.sm },
   sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingRight: theme.spacing.sm },
-  addPropBtn: { backgroundColor: theme.colors.primaryLight + '22', borderRadius: theme.borderRadius.full, paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.xs, marginTop: theme.spacing.sm },
-  addPropBtnText: { ...theme.typography.small, color: theme.colors.primary, fontWeight: '600' },
+  addPropBtn: { backgroundColor: colors.primaryLight + '22', borderRadius: theme.borderRadius.full, paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.xs, marginTop: theme.spacing.sm },
+  addPropBtnText: { ...theme.typography.small, color: colors.primary, fontWeight: '600' },
   participantRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: Platform.select({ web: 2, default: theme.spacing.xs }) },
-  participantName: { ...theme.typography.body, color: theme.colors.textPrimary, flex: 1 },
+  participantName: { ...theme.typography.body, color: colors.textPrimary, flex: 1 },
   participantRight: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
   statusBadge: { ...theme.typography.small, paddingHorizontal: theme.spacing.sm, paddingVertical: theme.spacing.xs, borderRadius: theme.borderRadius.full, overflow: 'hidden', fontWeight: '600' },
   removeBtn: { paddingHorizontal: theme.spacing.sm, paddingVertical: theme.spacing.xs },
-  removeBtnText: { color: theme.colors.error, fontSize: 14, fontWeight: '600' },
-  leaveBtn: { marginTop: theme.spacing.md, paddingVertical: theme.spacing.md, borderRadius: theme.borderRadius.md, alignItems: 'center', borderWidth: 1, borderColor: theme.colors.border },
-  leaveBtnText: { ...theme.typography.body, color: theme.colors.error },
-  divider: { height: 1, backgroundColor: theme.colors.borderLight, marginVertical: theme.spacing.lg, ...Platform.select({ web: { marginVertical: theme.spacing.md } }) },
+  removeBtnText: { color: colors.error, fontSize: 14, fontWeight: '600' },
+  leaveBtn: { marginTop: theme.spacing.md, paddingVertical: theme.spacing.md, borderRadius: theme.borderRadius.md, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
+  leaveBtnText: { ...theme.typography.body, color: colors.error },
+  divider: { height: 1, backgroundColor: colors.borderLight, marginVertical: theme.spacing.lg, ...Platform.select({ web: { marginVertical: theme.spacing.md } }) },
   statusRow: { flexDirection: 'row', gap: theme.spacing.sm },
-  statusBtn: { flex: 1, paddingVertical: Platform.select({ web: theme.spacing.sm, default: theme.spacing.md }), borderRadius: theme.borderRadius.md, backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border, alignItems: 'center' },
-  statusBtnText: { ...theme.typography.body, color: theme.colors.textSecondary },
-  confirmed: { ...theme.typography.body, color: theme.colors.going, fontWeight: '600' },
-  undecided: { ...theme.typography.caption, color: theme.colors.textTertiary, fontStyle: 'italic' },
-  proposalCard: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.md, padding: theme.spacing.md, marginBottom: theme.spacing.sm, borderWidth: 1, borderColor: theme.colors.borderLight, ...theme.shadows.sm },
-  proposalValue: { ...theme.typography.body, color: theme.colors.textPrimary, marginBottom: theme.spacing.sm },
+  statusBtn: { flex: 1, paddingVertical: Platform.select({ web: theme.spacing.sm, default: theme.spacing.md }), borderRadius: theme.borderRadius.md, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center' },
+  statusBtnText: { ...theme.typography.body, color: colors.textSecondary },
+  confirmed: { ...theme.typography.body, color: colors.going, fontWeight: '600' },
+  undecided: { ...theme.typography.caption, color: colors.textTertiary, fontStyle: 'italic' },
+  proposalCard: { backgroundColor: colors.surface, borderRadius: theme.borderRadius.md, padding: theme.spacing.md, marginBottom: theme.spacing.sm, borderWidth: 1, borderColor: colors.borderLight, ...theme.shadows.sm },
+  proposalValue: { ...theme.typography.body, color: colors.textPrimary, marginBottom: theme.spacing.sm },
   proposalActions: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
-  voteBtn: { backgroundColor: theme.colors.surfaceAlt, borderRadius: theme.borderRadius.full, paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.sm, borderWidth: 1, borderColor: theme.colors.border },
-  voteBtnActive: { backgroundColor: theme.colors.primaryLight + '22', borderColor: theme.colors.primaryLight },
+  voteBtn: { backgroundColor: colors.surfaceAlt, borderRadius: theme.borderRadius.full, paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.sm, borderWidth: 1, borderColor: colors.border },
+  voteBtnActive: { backgroundColor: colors.primaryLight + '22', borderColor: colors.primaryLight },
   voteBtnDisabled: { opacity: 0.4 },
-  voteBtnText: { ...theme.typography.caption, color: theme.colors.textSecondary },
-  pickBtn: { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.full, paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.sm },
-  pickBtnText: { color: theme.colors.textInverse, fontWeight: '600', fontSize: 13 },
-  finalizeBtn: { backgroundColor: theme.colors.going, borderRadius: theme.borderRadius.md, paddingVertical: Platform.select({ web: theme.spacing.md, default: theme.spacing.lg }), alignItems: 'center', marginBottom: theme.spacing.md },
-  finalizeBtnText: { color: theme.colors.textInverse, fontWeight: '700', fontSize: 16 },
-  unfinalizeBtn: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.md, paddingVertical: Platform.select({ web: theme.spacing.md, default: theme.spacing.lg }), alignItems: 'center', borderWidth: 1, borderColor: theme.colors.border, marginBottom: theme.spacing.md },
-  unfinalizeBtnText: { color: theme.colors.textSecondary, fontWeight: '600', fontSize: 15 },
-  completeBtn: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.md, paddingVertical: Platform.select({ web: theme.spacing.md, default: theme.spacing.lg }), alignItems: 'center', borderWidth: 1, borderColor: theme.colors.border, marginBottom: theme.spacing.md },
-  completeBtnText: { color: theme.colors.textSecondary, fontWeight: '600', fontSize: 15 },
-  cancelBtn: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.md, paddingVertical: Platform.select({ web: theme.spacing.md, default: theme.spacing.lg }), alignItems: 'center' },
-  cancelBtnText: { color: theme.colors.error, fontWeight: '600', fontSize: 15 },
-  cancelledBanner: { backgroundColor: theme.colors.error + '15', borderRadius: theme.borderRadius.md, padding: theme.spacing.lg, alignItems: 'center', marginTop: theme.spacing.lg },
-  cancelledText: { ...theme.typography.body, color: theme.colors.error, fontWeight: '600' },
-  repeatBtn: { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.md, paddingVertical: Platform.select({ web: theme.spacing.md, default: theme.spacing.xl }), alignItems: 'center', marginTop: theme.spacing.lg },
-  repeatBtnText: { color: theme.colors.textInverse, fontWeight: '700', fontSize: Platform.select({ web: 16, default: 18 }) },
-  meta: { ...theme.typography.caption, color: theme.colors.textSecondary, marginBottom: theme.spacing.xs },
-  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: theme.colors.overlay },
-  modalContent: { backgroundColor: theme.colors.surface, borderTopLeftRadius: theme.borderRadius.xxl, borderTopRightRadius: theme.borderRadius.xxl, padding: theme.spacing.xxl, ...Platform.select({ web: { padding: theme.spacing.lg } }) },
-  modalTitle: { ...theme.typography.h3, color: theme.colors.textPrimary, marginBottom: theme.spacing.lg },
+  voteBtnText: { ...theme.typography.caption, color: colors.textSecondary },
+  pickBtn: { backgroundColor: colors.primary, borderRadius: theme.borderRadius.full, paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.sm },
+  pickBtnText: { color: colors.textInverse, fontWeight: '600', fontSize: 13 },
+  finalizeBtn: { backgroundColor: colors.going, borderRadius: theme.borderRadius.md, paddingVertical: Platform.select({ web: theme.spacing.md, default: theme.spacing.lg }), alignItems: 'center', marginBottom: theme.spacing.md },
+  finalizeBtnText: { color: colors.textInverse, fontWeight: '700', fontSize: 16 },
+  unfinalizeBtn: { backgroundColor: colors.surface, borderRadius: theme.borderRadius.md, paddingVertical: Platform.select({ web: theme.spacing.md, default: theme.spacing.lg }), alignItems: 'center', borderWidth: 1, borderColor: colors.border, marginBottom: theme.spacing.md },
+  unfinalizeBtnText: { color: colors.textSecondary, fontWeight: '600', fontSize: 15 },
+  completeBtn: { backgroundColor: colors.surface, borderRadius: theme.borderRadius.md, paddingVertical: Platform.select({ web: theme.spacing.md, default: theme.spacing.lg }), alignItems: 'center', borderWidth: 1, borderColor: colors.border, marginBottom: theme.spacing.md },
+  completeBtnText: { color: colors.textSecondary, fontWeight: '600', fontSize: 15 },
+  cancelBtn: { backgroundColor: colors.surface, borderRadius: theme.borderRadius.md, paddingVertical: Platform.select({ web: theme.spacing.md, default: theme.spacing.lg }), alignItems: 'center' },
+  cancelBtnText: { color: colors.error, fontWeight: '600', fontSize: 15 },
+  cancelledBanner: { backgroundColor: colors.error + '15', borderRadius: theme.borderRadius.md, padding: theme.spacing.lg, alignItems: 'center', marginTop: theme.spacing.lg },
+  cancelledText: { ...theme.typography.body, color: colors.error, fontWeight: '600' },
+  repeatBtn: { backgroundColor: colors.primary, borderRadius: theme.borderRadius.md, paddingVertical: Platform.select({ web: theme.spacing.md, default: theme.spacing.xl }), alignItems: 'center', marginTop: theme.spacing.lg },
+  repeatBtnText: { color: colors.textInverse, fontWeight: '700', fontSize: Platform.select({ web: 16, default: 18 }) },
+  meta: { ...theme.typography.caption, color: colors.textSecondary, marginBottom: theme.spacing.xs },
+  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: colors.overlay },
+  modalContent: { backgroundColor: colors.surface, borderTopLeftRadius: theme.borderRadius.xxl, borderTopRightRadius: theme.borderRadius.xxl, padding: theme.spacing.xxl, ...Platform.select({ web: { padding: theme.spacing.lg } }) },
+  modalTitle: { ...theme.typography.h3, color: colors.textPrimary, marginBottom: theme.spacing.lg },
   modalList: { maxHeight: 260 },
   modalListContent: { paddingBottom: theme.spacing.sm },
-  modalInput: { backgroundColor: theme.colors.background, borderRadius: theme.borderRadius.md, padding: theme.spacing.lg, fontSize: 16, color: theme.colors.textPrimary, borderWidth: 1, borderColor: theme.colors.borderLight, marginBottom: theme.spacing.lg },
+  modalInput: { backgroundColor: colors.background, borderRadius: theme.borderRadius.md, padding: theme.spacing.lg, fontSize: 16, color: colors.textPrimary, borderWidth: 1, borderColor: colors.borderLight, marginBottom: theme.spacing.lg },
   modalActions: { flexDirection: 'row', gap: theme.spacing.md },
-  modalCancelBtn: { flex: 1, paddingVertical: theme.spacing.lg, borderRadius: theme.borderRadius.md, alignItems: 'center', borderWidth: 1, borderColor: theme.colors.border },
-  modalCancelText: { ...theme.typography.body, color: theme.colors.textSecondary },
-  modalSubmitBtn: { flex: 1, backgroundColor: theme.colors.primary, paddingVertical: theme.spacing.lg, borderRadius: theme.borderRadius.md, alignItems: 'center' },
-  modalSubmitText: { color: theme.colors.textInverse, fontWeight: '700', fontSize: 16 },
-  modalEmpty: { ...theme.typography.body, color: theme.colors.textTertiary, textAlign: 'center', paddingVertical: theme.spacing.xl },
-  inviteRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: theme.spacing.md, borderBottomWidth: 1, borderBottomColor: theme.colors.borderLight },
-  inviteAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: theme.colors.primaryLight + '33', alignItems: 'center', justifyContent: 'center', marginRight: theme.spacing.md },
-  inviteLetter: { fontSize: 16, fontWeight: '700', color: theme.colors.primary },
-  inviteName: { ...theme.typography.body, color: theme.colors.textPrimary, flex: 1 },
-  invitePlus: { ...theme.typography.h4, color: theme.colors.primary },
+  modalCancelBtn: { flex: 1, paddingVertical: theme.spacing.lg, borderRadius: theme.borderRadius.md, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
+  modalCancelText: { ...theme.typography.body, color: colors.textSecondary },
+  modalSubmitBtn: { flex: 1, backgroundColor: colors.primary, paddingVertical: theme.spacing.lg, borderRadius: theme.borderRadius.md, alignItems: 'center' },
+  modalSubmitText: { color: colors.textInverse, fontWeight: '700', fontSize: 16 },
+  modalEmpty: { ...theme.typography.body, color: colors.textTertiary, textAlign: 'center', paddingVertical: theme.spacing.xl },
+  inviteRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: theme.spacing.md, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
+  inviteAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primaryLight + '33', alignItems: 'center', justifyContent: 'center', marginRight: theme.spacing.md },
+  inviteLetter: { fontSize: 16, fontWeight: '700', color: colors.primary },
+  inviteName: { ...theme.typography.body, color: colors.textPrimary, flex: 1 },
+  invitePlus: { ...theme.typography.h4, color: colors.primary },
   chatContainer: { flex: 1 },
   chatList: { paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.sm, ...Platform.select({ web: { paddingVertical: theme.spacing.xs } }) },
-  msgBubble: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.lg, padding: Platform.select({ web: theme.spacing.sm, default: theme.spacing.md }), marginBottom: theme.spacing.sm, ...theme.shadows.sm },
-  msgSystem: { backgroundColor: theme.colors.surfaceAlt, borderLeftWidth: 3, borderLeftColor: theme.colors.primaryLight },
-  msgProposalCard: { backgroundColor: theme.colors.primaryLight + '11', borderRadius: theme.borderRadius.md, padding: theme.spacing.md, marginBottom: theme.spacing.sm, borderWidth: 1, borderColor: theme.colors.primaryLight + '33' },
-  msgProposalLabel: { ...theme.typography.caption, color: theme.colors.primary, marginBottom: theme.spacing.xs, fontWeight: '600' },
-  msgProposalValue: { ...theme.typography.body, color: theme.colors.textPrimary, marginBottom: theme.spacing.sm },
+  msgBubble: { backgroundColor: colors.surface, borderRadius: theme.borderRadius.lg, padding: Platform.select({ web: theme.spacing.sm, default: theme.spacing.md }), marginBottom: theme.spacing.sm, ...theme.shadows.sm },
+  msgSystem: { backgroundColor: colors.surfaceAlt, borderLeftWidth: 3, borderLeftColor: colors.primaryLight },
+  msgProposalCard: { backgroundColor: colors.primaryLight + '11', borderRadius: theme.borderRadius.md, padding: theme.spacing.md, marginBottom: theme.spacing.sm, borderWidth: 1, borderColor: colors.primaryLight + '33' },
+  msgProposalLabel: { ...theme.typography.caption, color: colors.primary, marginBottom: theme.spacing.xs, fontWeight: '600' },
+  msgProposalValue: { ...theme.typography.body, color: colors.textPrimary, marginBottom: theme.spacing.sm },
   msgProposalActions: { flexDirection: 'row', gap: theme.spacing.sm },
-  msgSender: { ...theme.typography.captionBold, color: theme.colors.primary, marginBottom: 2 },
-  msgText: { ...theme.typography.body, color: theme.colors.textPrimary },
-  chatInputRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: theme.spacing.lg, paddingVertical: Platform.select({ web: theme.spacing.sm, default: theme.spacing.md }), borderTopWidth: 1, borderTopColor: theme.colors.borderLight, backgroundColor: theme.colors.surface, gap: theme.spacing.sm },
-  chatInput: { flex: 1, backgroundColor: theme.colors.background, borderRadius: theme.borderRadius.full, paddingHorizontal: theme.spacing.lg, paddingVertical: Platform.select({ web: theme.spacing.sm, default: theme.spacing.md }), fontSize: 15, color: theme.colors.textPrimary },
-  sendBtn: { backgroundColor: theme.colors.primary, width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  sendBtnText: { color: theme.colors.textInverse, fontSize: 18, fontWeight: '700' },
+  msgSender: { ...theme.typography.captionBold, color: colors.primary, marginBottom: 2 },
+  msgText: { ...theme.typography.body, color: colors.textPrimary },
+  chatInputRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: theme.spacing.lg, paddingVertical: Platform.select({ web: theme.spacing.sm, default: theme.spacing.md }), borderTopWidth: 1, borderTopColor: colors.borderLight, backgroundColor: colors.surface, gap: theme.spacing.sm },
+  chatInput: { flex: 1, backgroundColor: colors.background, borderRadius: theme.borderRadius.full, paddingHorizontal: theme.spacing.lg, paddingVertical: Platform.select({ web: theme.spacing.sm, default: theme.spacing.md }), fontSize: 15, color: colors.textPrimary },
+  sendBtn: { backgroundColor: colors.primary, width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  sendBtnText: { color: colors.textInverse, fontSize: 18, fontWeight: '700' },
   loader: { marginTop: 100 },
-  errorBanner: { ...theme.typography.caption, color: theme.colors.error, textAlign: 'center', padding: theme.spacing.sm, backgroundColor: theme.colors.error + '11', marginHorizontal: theme.spacing.lg },
+  errorBanner: { ...theme.typography.caption, color: colors.error, textAlign: 'center', padding: theme.spacing.sm, backgroundColor: colors.error + '11', marginHorizontal: theme.spacing.lg },
   btnDisabled: { opacity: 0.5 },
 });

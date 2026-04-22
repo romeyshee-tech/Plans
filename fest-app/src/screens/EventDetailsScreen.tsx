@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, Platform, ActivityIndicator } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { theme } from '../theme';
+import { theme, useThemeColors, type ThemeColors } from '../theme';
 import { useEventsStore } from '../stores/eventsStore';
 import { formatDateFull } from '../utils/dates';
 import { CATEGORY_LABELS } from '../utils/constants';
@@ -12,11 +12,13 @@ import type { HomeStackParamList } from '../navigation/types';
 type Props = NativeStackScreenProps<HomeStackParamList, 'EventDetails'>;
 
 export const EventDetailsScreen = ({ route, navigation }: Props) => {
+  const colors = useThemeColors();
+  const s = React.useMemo(() => makeStyles(colors), [colors]);
   const { eventId } = route.params;
   const { events, interestedIds, savedIds, loading, error, toggleInterest, toggleSave } = useEventsStore();
   const event = events.find((e) => e.id === eventId);
 
-  if (loading && !event) return <View style={s.root}><Aurora /><ScreenContainer><View style={s.inner}><ActivityIndicator size="large" color={theme.colors.primary} style={s.loader} /></View></ScreenContainer></View>;
+  if (loading && !event) return <View style={s.root}><Aurora /><ScreenContainer><View style={s.inner}><ActivityIndicator size="large" color={colors.primary} style={s.loader} /></View></ScreenContainer></View>;
   if (!event) return <View style={s.root}><Aurora /><ScreenContainer><View style={s.inner}><Text style={s.empty}>{error || 'Мероприятие не найдено'}</Text></View></ScreenContainer></View>;
 
   const isInterested = interestedIds.has(event.id);
@@ -91,27 +93,27 @@ export const EventDetailsScreen = ({ route, navigation }: Props) => {
   );
 };
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.colors.background },
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
   inner: { flex: 1 },
   scrollContent: { paddingBottom: theme.spacing.xxxl },
   backBtn: { paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.xl, paddingBottom: theme.spacing.sm, ...Platform.select({ web: { paddingTop: theme.spacing.lg } }) },
-  backText: { ...theme.typography.body, color: theme.colors.primary, fontWeight: '700' },
+  backText: { ...theme.typography.body, color: colors.primary, fontWeight: '700' },
   heroWrap: { marginHorizontal: theme.spacing.lg, borderRadius: theme.borderRadius.xl, overflow: 'hidden', ...theme.shadows.md, position: 'relative' },
   hero: { width: '100%', height: Platform.select({ web: 220, default: 260 }), aspectRatio: Platform.select({ web: 16 / 8, default: undefined }) },
   heroOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(108,92,231,0.08)' },
   body: { paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.lg, ...Platform.select({ web: { paddingTop: theme.spacing.md } }) },
-  category: { fontFamily: theme.fonts.displayMedium, fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: theme.colors.accent, marginBottom: 6 },
-  title: { fontFamily: theme.fonts.display, fontSize: Platform.OS === 'web' ? 32 : 28, lineHeight: Platform.OS === 'web' ? 36 : 32, color: theme.colors.primaryDark, letterSpacing: -1, marginBottom: theme.spacing.sm },
-  venue: { ...theme.typography.bodyBold, color: theme.colors.textPrimary, marginBottom: 2 },
-  meta: { ...theme.typography.caption, color: theme.colors.textSecondary, marginBottom: theme.spacing.xs },
-  venueLink: { ...theme.typography.captionBold, color: theme.colors.primary, marginBottom: theme.spacing.xs },
+  category: { fontFamily: theme.fonts.displayMedium, fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: colors.accent, marginBottom: 6 },
+  title: { fontFamily: theme.fonts.display, fontSize: Platform.OS === 'web' ? 32 : 28, lineHeight: Platform.OS === 'web' ? 36 : 32, color: colors.primaryDark, letterSpacing: -1, marginBottom: theme.spacing.sm },
+  venue: { ...theme.typography.bodyBold, color: colors.textPrimary, marginBottom: 2 },
+  meta: { ...theme.typography.caption, color: colors.textSecondary, marginBottom: theme.spacing.xs },
+  venueLink: { ...theme.typography.captionBold, color: colors.primary, marginBottom: theme.spacing.xs },
   proofTilt: { marginTop: theme.spacing.md },
   proof: { backgroundColor: 'rgba(255,255,255,0.78)', borderRadius: theme.borderRadius.lg, padding: theme.spacing.lg, borderWidth: 1, borderColor: 'rgba(108,92,231,0.18)', ...Platform.select({ web: { backdropFilter: 'blur(10px)' } as any }) },
-  proofEyebrow: { fontFamily: theme.fonts.displayMedium, fontSize: 10, letterSpacing: 2.5, textTransform: 'uppercase', color: theme.colors.accent, marginBottom: 4 },
-  proofText: { ...theme.typography.caption, color: theme.colors.primaryDark, fontWeight: '600' },
+  proofEyebrow: { fontFamily: theme.fonts.displayMedium, fontSize: 10, letterSpacing: 2.5, textTransform: 'uppercase', color: colors.accent, marginBottom: 4 },
+  proofText: { ...theme.typography.caption, color: colors.primaryDark, fontWeight: '600' },
   divider: { height: 1, backgroundColor: 'rgba(108,92,231,0.12)', marginVertical: theme.spacing.lg },
-  description: { ...theme.typography.body, color: theme.colors.textPrimary, lineHeight: 22 },
+  description: { ...theme.typography.body, color: colors.textPrimary, lineHeight: 22 },
   bottomBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -124,13 +126,13 @@ const s = StyleSheet.create({
     ...Platform.select({ web: { backdropFilter: 'blur(18px)' } as any }),
   },
   actionBtn: { backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: theme.borderRadius.full, paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.md, borderWidth: 1, borderColor: 'rgba(108,92,231,0.18)' },
-  actionActive: { backgroundColor: theme.colors.primaryLight + '30', borderColor: theme.colors.primary },
-  actionText: { ...theme.typography.caption, color: theme.colors.textSecondary, fontWeight: '700' },
-  actionTextActive: { color: theme.colors.primaryDark, fontWeight: '800' },
-  saveIcon: { fontSize: 26, color: theme.colors.textTertiary, paddingHorizontal: theme.spacing.sm },
-  saveIconActive: { color: theme.colors.accent },
-  planBtn: { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.full, paddingHorizontal: theme.spacing.xxl, paddingVertical: theme.spacing.md, marginLeft: 'auto', ...theme.shadows.sm },
-  planBtnText: { color: theme.colors.textInverse, fontWeight: '800', fontSize: 16, letterSpacing: 0.3 },
-  empty: { ...theme.typography.body, color: theme.colors.textTertiary, textAlign: 'center', marginTop: 100 },
+  actionActive: { backgroundColor: colors.primaryLight + '30', borderColor: colors.primary },
+  actionText: { ...theme.typography.caption, color: colors.textSecondary, fontWeight: '700' },
+  actionTextActive: { color: colors.primaryDark, fontWeight: '800' },
+  saveIcon: { fontSize: 26, color: colors.textTertiary, paddingHorizontal: theme.spacing.sm },
+  saveIconActive: { color: colors.accent },
+  planBtn: { backgroundColor: colors.primary, borderRadius: theme.borderRadius.full, paddingHorizontal: theme.spacing.xxl, paddingVertical: theme.spacing.md, marginLeft: 'auto', ...theme.shadows.sm },
+  planBtnText: { color: colors.textInverse, fontWeight: '800', fontSize: 16, letterSpacing: 0.3 },
+  empty: { ...theme.typography.body, color: colors.textTertiary, textAlign: 'center', marginTop: 100 },
   loader: { marginTop: 100 },
 });

@@ -1,37 +1,12 @@
 import { Platform } from 'react-native';
+import { lightColors, darkColors, type ThemeColors } from './palettes';
 
-const colors = {
-  primary: '#6C5CE7',
-  primaryLight: '#A29BFE',
-  primaryDark: '#4834D4',
-  accent: '#FD79A8',
-  accentLight: '#FDCB6E',
-
-  background: '#FAFAFA',
-  surface: '#FFFFFF',
-  surfaceAlt: '#F5F3FE',
-
-  textPrimary: '#2D3436',
-  textSecondary: '#636E72',
-  textTertiary: '#B2BEC3',
-  textInverse: '#FFFFFF',
-
-  success: '#00B894',
-  warning: '#FDCB6E',
-  error: '#E17055',
-  info: '#74B9FF',
-
-  border: '#DFE6E9',
-  borderLight: '#F0F0F0',
-
-  going: '#00B894',
-  thinking: '#FDCB6E',
-  cant: '#E17055',
-  invited: '#74B9FF',
-
-  shadow: 'rgba(0,0,0,0.06)',
-  overlay: 'rgba(0,0,0,0.4)',
-} as const;
+// NOTE: `theme.colors` is frozen at module load to the LIGHT palette and is
+// kept for backward compatibility with consumers that don't yet consume the
+// runtime theme via `useTheme()`. Anything that should respect the user's
+// dark-mode preference MUST resolve colors via `useTheme()` / `useThemeColors()`
+// and compute its StyleSheet inside the component (e.g. with `useMemo`).
+const colors: ThemeColors = lightColors;
 
 const spacing = {
   xs: 4,
@@ -125,3 +100,7 @@ export const theme = {
 } as const;
 
 export type Theme = typeof theme;
+
+export { lightColors, darkColors };
+export type { ThemeColors, ThemeMode, ResolvedMode } from './palettes';
+export { ThemeProvider, useTheme, useThemeColors } from './ThemeContext';

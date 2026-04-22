@@ -16,12 +16,14 @@ import Animated, {
   interpolate,
   Extrapolation,
 } from 'react-native-reanimated';
-import { theme } from '../theme';
+import { theme, useThemeColors, type ThemeColors } from '../theme';
 import { useAuthStore } from '../stores/authStore';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { Aurora, FadeIn, Pressable, SplitText, springs } from '../motion';
 
 export const AuthScreen = () => {
+  const colors = useThemeColors();
+  const s = React.useMemo(() => makeStyles(colors), [colors]);
   const [phoneDigits, setPhoneDigits] = useState('7');
   const [code, setCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
@@ -151,7 +153,7 @@ export const AuthScreen = () => {
                   <TextInput
                     style={s.input}
                     placeholder="+7 (941) 223 22 22"
-                    placeholderTextColor={theme.colors.textTertiary}
+                    placeholderTextColor={colors.textTertiary}
                     value={formattedPhone}
                     onChangeText={(value) => setPhoneDigits(normalizePhoneInput(value))}
                     keyboardType="phone-pad"
@@ -166,7 +168,7 @@ export const AuthScreen = () => {
                   activeScale={0.97}
                 >
                   {loading ? (
-                    <ActivityIndicator color={theme.colors.textInverse} />
+                    <ActivityIndicator color={colors.textInverse} />
                   ) : (
                     <Text style={s.primaryBtnText}>Получить код</Text>
                   )}
@@ -180,7 +182,7 @@ export const AuthScreen = () => {
                   <TextInput
                     style={[s.input, s.inputOtp]}
                     placeholder="1111"
-                    placeholderTextColor={theme.colors.textTertiary}
+                    placeholderTextColor={colors.textTertiary}
                     value={code}
                     onChangeText={setCode}
                     keyboardType="number-pad"
@@ -196,7 +198,7 @@ export const AuthScreen = () => {
                   activeScale={0.97}
                 >
                   {loading ? (
-                    <ActivityIndicator color={theme.colors.textInverse} />
+                    <ActivityIndicator color={colors.textInverse} />
                   ) : (
                     <Text style={s.primaryBtnText}>Войти</Text>
                   )}
@@ -213,10 +215,10 @@ export const AuthScreen = () => {
   );
 };
 
-const s = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: colors.background,
   },
   container: {
     flex: 1,
@@ -233,14 +235,14 @@ const s = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
     letterSpacing: 6,
-    color: theme.colors.primaryDark,
+    color: colors.primaryDark,
   },
   brandDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
     marginLeft: 8,
-    backgroundColor: theme.colors.accent,
+    backgroundColor: colors.accent,
   },
   heroWrap: {
     marginBottom: theme.spacing.xl,
@@ -249,24 +251,24 @@ const s = StyleSheet.create({
     fontFamily: theme.fonts.display,
     fontSize: Platform.OS === 'web' ? 76 : 60,
     lineHeight: Platform.OS === 'web' ? 82 : 66,
-    color: theme.colors.primaryDark,
+    color: colors.primaryDark,
     letterSpacing: -2.5,
   },
   heroSub: {
     marginTop: 10,
     fontSize: 15,
     fontWeight: '600',
-    color: theme.colors.textSecondary,
+    color: colors.textSecondary,
     letterSpacing: 0.2,
   },
   subtitle: {
     ...theme.typography.body,
-    color: theme.colors.textSecondary,
+    color: colors.textSecondary,
     marginBottom: theme.spacing.lg,
   },
   errorText: {
     ...theme.typography.caption,
-    color: theme.colors.error,
+    color: colors.error,
     marginBottom: theme.spacing.sm,
     paddingHorizontal: theme.spacing.sm,
   },
@@ -293,7 +295,7 @@ const s = StyleSheet.create({
   },
   inputLabel: {
     ...theme.typography.caption,
-    color: theme.colors.textSecondary,
+    color: colors.textSecondary,
     fontWeight: '700',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
@@ -301,11 +303,11 @@ const s = StyleSheet.create({
   },
   input: {
     ...theme.typography.h3,
-    color: theme.colors.textPrimary,
+    color: colors.textPrimary,
     fontWeight: '600',
     paddingVertical: theme.spacing.md,
     borderBottomWidth: 2,
-    borderBottomColor: theme.colors.primaryLight,
+    borderBottomColor: colors.primaryLight,
   },
   inputOtp: {
     letterSpacing: 10,
@@ -314,30 +316,30 @@ const s = StyleSheet.create({
     textAlign: 'center',
   },
   primaryBtn: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: colors.primary,
     borderRadius: theme.borderRadius.full,
     paddingVertical: theme.spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: theme.colors.primary,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.35,
     shadowRadius: 18,
     elevation: 6,
   },
   primaryBtnDisabled: {
-    backgroundColor: theme.colors.primaryLight,
+    backgroundColor: colors.primaryLight,
     shadowOpacity: 0,
   },
   primaryBtnText: {
-    color: theme.colors.textInverse,
+    color: colors.textInverse,
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: 0.3,
   },
   hint: {
     ...theme.typography.caption,
-    color: theme.colors.textTertiary,
+    color: colors.textTertiary,
     textAlign: 'center',
     marginTop: theme.spacing.md,
   },
@@ -348,7 +350,7 @@ const s = StyleSheet.create({
   },
   secondaryBtnText: {
     ...theme.typography.body,
-    color: theme.colors.primary,
+    color: colors.primary,
     fontWeight: '700',
   },
 });

@@ -5,7 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Text, StyleSheet, Platform, View, ActivityIndicator } from 'react-native';
 import * as Linking from 'expo-linking';
 import { useFonts, Unbounded_500Medium, Unbounded_700Bold } from '@expo-google-fonts/unbounded';
-import { theme } from './src/theme';
+import { theme, ThemeProvider, useThemeColors, type ThemeColors } from './src/theme';
 import { useAuthStore } from './src/stores/authStore';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
@@ -32,8 +32,10 @@ const PlansStackNav = createNativeStackNavigator<PlansStackParamList>();
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 
 const TabIcon = ({ label, isCreate }: { label: string; isCreate?: boolean }) => {
-  if (isCreate) return <Text style={s.createIcon}>+</Text>;
-  return <Text style={s.tabIcon}>{label}</Text>;
+  const colors = useThemeColors();
+  const styles = React.useMemo(() => makeStyles(colors), [colors]);
+  if (isCreate) return <Text style={styles.createIcon}>+</Text>;
+  return <Text style={styles.tabIcon}>{label}</Text>;
 };
 
 const HomeStack = () => (
@@ -53,16 +55,18 @@ const PlansStack = () => (
   </PlansStackNav.Navigator>
 );
 
-const MainTabs = () => (
+const MainTabs = () => {
+  const colors = useThemeColors();
+  return (
   <Tab.Navigator screenOptions={{
     headerShown: false,
     tabBarStyle: Platform.select({
-      web: { height: 56, borderTopWidth: 1, borderTopColor: theme.colors.borderLight, maxWidth: 600, alignSelf: 'center', width: '100%' },
-      default: { height: 60, borderTopWidth: 1, borderTopColor: theme.colors.borderLight },
+      web: { height: 56, borderTopWidth: 1, borderTopColor: colors.borderLight, backgroundColor: colors.surface, maxWidth: 600, alignSelf: 'center', width: '100%' },
+      default: { height: 60, borderTopWidth: 1, borderTopColor: colors.borderLight, backgroundColor: colors.surface },
     }),
     tabBarLabelStyle: { fontSize: 11, fontWeight: '500' },
-    tabBarActiveTintColor: theme.colors.primary,
-    tabBarInactiveTintColor: theme.colors.textTertiary,
+    tabBarActiveTintColor: colors.primary,
+    tabBarInactiveTintColor: colors.textTertiary,
   }}>
     <Tab.Screen name="HomeTab" component={HomeStack} options={{ tabBarLabel: 'Главная', tabBarIcon: () => <TabIcon label="🏠" /> }} />
     <Tab.Screen name="SearchTab" component={SearchScreen} options={{ tabBarLabel: 'Поиск', tabBarIcon: () => <TabIcon label="🔍" /> }} />
@@ -70,7 +74,8 @@ const MainTabs = () => (
     <Tab.Screen name="PlansTab" component={PlansStack} options={{ tabBarLabel: 'Планы', tabBarIcon: () => <TabIcon label="📋" /> }} />
     <Tab.Screen name="ProfileTab" component={ProfileScreen} options={{ tabBarLabel: 'Профиль', tabBarIcon: () => <TabIcon label="👤" /> }} />
   </Tab.Navigator>
-);
+  );
+};
 
 const linking: LinkingOptions<RootStackParamList> = {
   prefixes: [Linking.createURL('/'), 'fest://', 'https://plans.app', 'http://localhost:8081'],
@@ -153,34 +158,38 @@ const UnauthenticatedShell = () => {
     setShowOnboarding(false);
   }, []);
 
-  if (!onboardingResolved) {
-    return (
-      <View style={s.fontLoader}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
-  }
+  if (!onboardingResolved) return <BootSpinner />;
   if (showOnboarding) return <OnboardingScreen onFinish={finishOnboarding} />;
   return <AuthScreen />;
 };
 
-export default function App() {
+const BootSpinner = () => {
+  const colors = useThemeColors();
+  return (
+    <View style={[{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }]}>
+      <ActivityIndicator size="large" color={colors.primary} />
+    </View>
+  );
+};
+
+function AppInner() {
   const isAuthenticated = useAuthStore((s: { isAuthenticated: boolean }) => s.isAuthenticated);
   const [fontsLoaded] = useFonts({ Unbounded_500Medium, Unbounded_700Bold });
 
-  if (!fontsLoaded) {
-    return (
-      <View style={s.fontLoader}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
-  }
+  if (!fontsLoaded) return <BootSpinner />;
   if (!isAuthenticated) return <UnauthenticatedShell />;
   return <AppNavigator />;
 }
 
-const s = StyleSheet.create({
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppInner />
+    </ThemeProvider>
+  );
+}
+
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   tabIcon: { fontSize: 20 },
-  createIcon: { fontSize: 28, fontWeight: '700', color: theme.colors.primary },
-  fontLoader: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.background },
+  createIcon: { fontSize: 28, fontWeight: '700', color: colors.primary },
 });

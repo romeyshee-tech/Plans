@@ -10,7 +10,7 @@ import Animated, {
   interpolateColor,
   Extrapolation,
 } from 'react-native-reanimated';
-import { theme } from '../theme';
+import { useThemeColors, type ThemeColors } from '../theme';
 import { easings } from './springs';
 import { useReduceMotion } from './a11y';
 
@@ -23,6 +23,8 @@ type Props = {
 // Drifts slowly, shifts hue — creates a living, premium background.
 // No SVG dependency — just blurred circles with mix-blend on web.
 export const Aurora = ({ intensity = 'subtle', style }: Props) => {
+  const colors = useThemeColors();
+  const s = React.useMemo(() => makeStyles(colors), [colors]);
   const reduce = useReduceMotion();
   const drift = useSharedValue(reduce ? 0.5 : 0);
 
@@ -40,7 +42,7 @@ export const Aurora = ({ intensity = 'subtle', style }: Props) => {
     const color = interpolateColor(
       drift.value,
       [0, 0.5, 1],
-      [theme.colors.primary, '#8B7CF6', theme.colors.primaryLight],
+      [colors.primary, '#8B7CF6', colors.primaryLight],
     );
     return {
       transform: [{ translateX: tx }, { translateY: ty }, { scale }],
@@ -55,7 +57,7 @@ export const Aurora = ({ intensity = 'subtle', style }: Props) => {
     const color = interpolateColor(
       drift.value,
       [0, 0.5, 1],
-      [theme.colors.accent, '#FFA8C5', theme.colors.accentLight],
+      [colors.accent, '#FFA8C5', colors.accentLight],
     );
     return {
       transform: [{ translateX: tx }, { translateY: ty }, { scale }],
@@ -95,14 +97,14 @@ export const Aurora = ({ intensity = 'subtle', style }: Props) => {
   );
 };
 
-const s = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   root: {
     ...StyleSheet.absoluteFillObject,
     overflow: 'hidden',
   },
   tint: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: theme.colors.background,
+    backgroundColor: colors.background,
   },
   blob: {
     position: 'absolute',
@@ -120,6 +122,6 @@ const s = StyleSheet.create({
   blobC: { top: '35%', right: '-25%' },
   veil: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.55)',
+    backgroundColor: colors.auroraVeil,
   },
 });
