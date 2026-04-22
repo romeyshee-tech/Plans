@@ -84,8 +84,8 @@ export const darkColors: ThemeColors = {
   surfaceAlt: '#222632',
 
   textPrimary: '#F5F6F8',
-  textSecondary: '#B2BEC3',
-  textTertiary: '#6B7280',
+  textSecondary: '#D1D5DB',
+  textTertiary: '#8A93A3',
   textInverse: '#FFFFFF',
 
   success: '#2DD4A6',

@@ -308,9 +308,9 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingVertical: 9,
     borderRadius: 999,
     marginRight: 8,
-    backgroundColor: 'rgba(255,255,255,0.7)',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: 'rgba(108,92,231,0.18)',
+    borderColor: colors.border,
   },
   chipActive: {
     backgroundColor: colors.primary,
@@ -395,9 +395,9 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: colors.surface,
   },
-  saveIcon: { fontSize: 18, color: colors.textSecondary },
+  saveIcon: { fontSize: 18, color: colors.textPrimary },
   saveIconActive: { color: colors.accent },
   cardBody: {
     padding: theme.spacing.lg,
