@@ -397,7 +397,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.surface,
   },
-  saveIcon: { fontSize: 18, color: colors.textPrimary },
+  saveIcon: { fontSize: 18, color: colors.textSecondary },
   saveIconActive: { color: colors.accent },
   cardBody: {
     padding: theme.spacing.lg,
