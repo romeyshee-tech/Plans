@@ -11,7 +11,7 @@ type ThemeContextValue = {
 };
 
 const defaultValue: ThemeContextValue = {
-  mode: 'system',
+  mode: 'light',
   resolved: 'light',
   colors: lightColors,
   setMode: () => {},
@@ -21,7 +21,9 @@ const ThemeContext = React.createContext<ThemeContextValue>(defaultValue);
 
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const system = useColorScheme(); // 'light' | 'dark' | null
-  const [mode, setModeState] = React.useState<ThemeMode>('system');
+  // Default to 'light' so dark mode is strictly opt-in (some surfaces still
+  // use hardcoded rgba(255,255,255,*) glass backgrounds that don't adapt yet).
+  const [mode, setModeState] = React.useState<ThemeMode>('light');
 
   React.useEffect(() => {
     let cancelled = false;

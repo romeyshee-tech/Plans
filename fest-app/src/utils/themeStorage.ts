@@ -16,7 +16,8 @@ const hasLocalStorage = () =>
 
 const parse = (v: string | null): ThemeMode => {
   if (v === 'light' || v === 'dark' || v === 'system') return v;
-  return 'system';
+  // Default for users without a saved preference: opt-in dark mode.
+  return 'light';
 };
 
 export async function loadThemeMode(): Promise<ThemeMode> {
@@ -30,7 +31,7 @@ export async function loadThemeMode(): Promise<ThemeMode> {
     inMemoryMode = parse(v);
     return inMemoryMode;
   } catch {
-    inMemoryMode = 'system';
+    inMemoryMode = 'light';
     return inMemoryMode;
   }
 }
