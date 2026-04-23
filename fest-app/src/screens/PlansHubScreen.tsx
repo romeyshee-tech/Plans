@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, Platform, ActivityIndicator } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { theme } from '../theme';
+import { theme, useThemeColors, type ThemeColors } from '../theme';
 import { usePlansStore } from '../stores/plansStore';
 import { useAuthStore } from '../stores/authStore';
 import { useGroupsStore } from '../stores/groupsStore';
@@ -22,14 +22,19 @@ const STATUS_LABELS: Record<string, string> = {
   cant: 'Не могу',
   invited: 'Приглашение',
 };
-const STATUS_COLORS: Record<string, string> = {
-  going: theme.colors.going,
-  thinking: theme.colors.thinking,
-  cant: theme.colors.cant,
-  invited: theme.colors.invited,
+const getStatusColor = (colors: ThemeColors, key: string): string => {
+  switch (key) {
+    case 'going': return colors.going;
+    case 'thinking': return colors.thinking;
+    case 'cant': return colors.cant;
+    case 'invited': return colors.invited;
+    default: return colors.textTertiary;
+  }
 };
 
 export const PlansHubScreen = ({ navigation }: Props) => {
+  const colors = useThemeColors();
+  const s = React.useMemo(() => makeStyles(colors), [colors]);
   const [section, setSection] = React.useState<HubSection>('active');
   const plans = usePlansStore((s) => s.plans);
   const plansLoading = usePlansStore((s) => s.loading);
@@ -112,7 +117,7 @@ export const PlansHubScreen = ({ navigation }: Props) => {
                   count={sections.length}
                   activeIndex={activeIndex}
                   containerWidth={tabBarWidth}
-                  color={theme.colors.primary}
+                  color={colors.primary}
                   height={undefined}
                   style={s.indicator}
                 />
@@ -165,7 +170,7 @@ export const PlansHubScreen = ({ navigation }: Props) => {
           (section === 'invitations' && invLoading && pendingInvitations.length === 0) ||
           (section === 'groups' && groupsLoading && groups.length === 0) ? (
             <View style={s.loader}>
-              <ActivityIndicator size="large" color={theme.colors.primary} />
+              <ActivityIndicator size="large" color={colors.primary} />
             </View>
           ) : (
             <>
@@ -284,6 +289,8 @@ const PlanCard = ({
   onPress: () => void;
   index: number;
 }) => {
+  const colors = useThemeColors();
+  const s = React.useMemo(() => makeStyles(colors), [colors]);
   const statusLabel =
     plan.lifecycle_state === 'finalized'
       ? '✓ Подтверждён'
@@ -291,7 +298,7 @@ const PlanCard = ({
       ? 'Завершён'
       : 'Активный';
   const myStatus = plan.participants?.find((p) => p.user_id === userId)?.status ?? 'invited';
-  const color = STATUS_COLORS[myStatus];
+  const color = getStatusColor(colors, myStatus);
   const label = STATUS_LABELS[myStatus];
 
   return (
@@ -334,7 +341,10 @@ const InvitationCard = ({
   declining: boolean;
   onOpen: () => void;
   index: number;
-}) => (
+}) => {
+  const colors = useThemeColors();
+  const s = React.useMemo(() => makeStyles(colors), [colors]);
+  return (
   <FadeIn delay={index * 55} direction="up" distance={14}>
     <Tilt style={s.card}>
       <Pressable style={s.cardInner} onPress={onOpen} activeScale={0.98}>
@@ -367,7 +377,8 @@ const InvitationCard = ({
       </Pressable>
     </Tilt>
   </FadeIn>
-);
+  );
+};
 
 const GroupCard = ({
   group,
@@ -377,7 +388,10 @@ const GroupCard = ({
   group: Group;
   onPress: () => void;
   index: number;
-}) => (
+}) => {
+  const colors = useThemeColors();
+  const s = React.useMemo(() => makeStyles(colors), [colors]);
+  return (
   <FadeIn delay={index * 55} direction="up" distance={14}>
     <Tilt style={s.card}>
       <Pressable style={s.cardInner} onPress={onPress} activeScale={0.98}>
@@ -386,10 +400,11 @@ const GroupCard = ({
       </Pressable>
     </Tilt>
   </FadeIn>
-);
+  );
+};
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.colors.background },
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
   inner: { flex: 1 },
   headerBlock: {
     paddingHorizontal: theme.spacing.lg,
@@ -400,7 +415,7 @@ const s = StyleSheet.create({
     fontFamily: theme.fonts.displayMedium,
     fontSize: 11,
     letterSpacing: 4,
-    color: theme.colors.accent,
+    color: colors.accent,
     textTransform: 'uppercase',
     marginBottom: 4,
   },
@@ -408,14 +423,14 @@ const s = StyleSheet.create({
     fontFamily: theme.fonts.display,
     fontSize: Platform.OS === 'web' ? 52 : 44,
     lineHeight: Platform.OS === 'web' ? 56 : 48,
-    color: theme.colors.primaryDark,
+    color: colors.primaryDark,
     letterSpacing: -2,
   },
   headerSub: {
     marginTop: 6,
     fontSize: 13,
     fontWeight: '600',
-    color: theme.colors.textSecondary,
+    color: colors.textSecondary,
     letterSpacing: 0.2,
   },
   tabsContainer: {
@@ -454,12 +469,12 @@ const s = StyleSheet.create({
   tabText: {
     fontSize: 13,
     fontWeight: '700',
-    color: theme.colors.textSecondary,
+    color: colors.textSecondary,
     letterSpacing: 0.2,
   },
-  tabTextActive: { color: theme.colors.textInverse, fontWeight: '800' },
+  tabTextActive: { color: colors.textInverse, fontWeight: '800' },
   tabBadge: {
-    backgroundColor: theme.colors.accent,
+    backgroundColor: colors.accent,
     borderRadius: 999,
     minWidth: 18,
     height: 18,
@@ -469,14 +484,14 @@ const s = StyleSheet.create({
   },
   tabBadgeActive: { backgroundColor: 'rgba(255,255,255,0.28)' },
   tabBadgeText: {
-    color: theme.colors.textInverse,
+    color: colors.textInverse,
     fontSize: 10,
     fontWeight: '800',
   },
-  tabBadgeTextActive: { color: theme.colors.textInverse },
+  tabBadgeTextActive: { color: colors.textInverse },
   errorBanner: {
     ...theme.typography.caption,
-    color: theme.colors.error,
+    color: colors.error,
     paddingHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.sm,
   },
@@ -486,7 +501,7 @@ const s = StyleSheet.create({
     gap: theme.spacing.md,
   },
   card: {
-    backgroundColor: theme.colors.surface,
+    backgroundColor: colors.surface,
     borderRadius: theme.borderRadius.xxl,
     borderWidth: 1,
     borderColor: 'rgba(108,92,231,0.08)',
@@ -507,12 +522,12 @@ const s = StyleSheet.create({
   cardTitle: {
     fontSize: 17,
     fontWeight: '800',
-    color: theme.colors.textPrimary,
+    color: colors.textPrimary,
     letterSpacing: -0.3,
   },
   cardMeta: {
     ...theme.typography.caption,
-    color: theme.colors.textSecondary,
+    color: colors.textSecondary,
     marginTop: 4,
   },
   inviteActions: {
@@ -521,26 +536,26 @@ const s = StyleSheet.create({
     marginTop: theme.spacing.md,
   },
   acceptBtn: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: colors.primary,
     borderRadius: theme.borderRadius.full,
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.sm,
-    shadowColor: theme.colors.primary,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
     elevation: 4,
   },
-  acceptBtnText: { color: theme.colors.textInverse, fontWeight: '800', fontSize: 14 },
+  acceptBtnText: { color: colors.textInverse, fontWeight: '800', fontSize: 14 },
   declineBtn: {
     backgroundColor: 'rgba(255,255,255,0.7)',
     borderRadius: theme.borderRadius.full,
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.sm,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: colors.border,
   },
-  declineBtnText: { color: theme.colors.textSecondary, fontWeight: '700', fontSize: 14 },
+  declineBtnText: { color: colors.textSecondary, fontWeight: '700', fontSize: 14 },
   btnDisabled: { opacity: 0.5 },
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 });

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { theme } from '../theme';
+import { useThemeColors } from '../theme';
 import { useEventsStore } from '../stores/eventsStore';
 import { CreatePlanForm } from './CreatePlanForm';
 import { formatDateShort } from '../utils/dates';
@@ -16,15 +16,16 @@ type NavType = CompositeNavigationProp<
 >;
 
 export const CreatePlanFromEventScreen = ({ route }: { route: any }) => {
+  const colors = useThemeColors();
   const { eventId } = route.params;
   const events = useEventsStore((s) => s.events);
   const event = events.find((e) => e.id === eventId);
   const navigation = useNavigation<NavType>();
 
-  if (!event) return <View style={s.container} />;
+  if (!event) return <View style={[s.container, { backgroundColor: colors.background }]} />;
 
   return (
-    <View style={s.container}>
+    <View style={[s.container, { backgroundColor: colors.background }]}>
       <CreatePlanForm
         linkedEventId={event.id}
         linkedEventTitle={event.title}
@@ -42,5 +43,5 @@ export const CreatePlanFromEventScreen = ({ route }: { route: any }) => {
 };
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background },
+  container: { flex: 1 },
 });

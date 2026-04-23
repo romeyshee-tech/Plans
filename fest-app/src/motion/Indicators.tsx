@@ -12,7 +12,7 @@ import Animated, {
   Extrapolation,
   Easing,
 } from 'react-native-reanimated';
-import { theme } from '../theme';
+import { useThemeColors, type ThemeColors } from '../theme';
 import { springs } from './springs';
 import { Pressable } from './Pressable';
 
@@ -30,6 +30,8 @@ export const Badge = ({
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
 }) => {
+  const colors = useThemeColors();
+  const s = React.useMemo(() => makeStyles(colors), [colors]);
   const haloV = useSharedValue(0);
 
   React.useEffect(() => {
@@ -70,7 +72,10 @@ type BellProps = {
   onPress?: () => void;
   color?: string;
 };
-export const NotificationBell = ({ count, onPress, color = theme.colors.textPrimary }: BellProps) => {
+export const NotificationBell = ({ count, onPress, color }: BellProps) => {
+  const colors = useThemeColors();
+  const s = React.useMemo(() => makeStyles(colors), [colors]);
+  const tint = color ?? colors.textPrimary;
   const rot = useSharedValue(0);
   const badgeScale = useSharedValue(count > 0 ? 1 : 0);
 
@@ -101,7 +106,7 @@ export const NotificationBell = ({ count, onPress, color = theme.colors.textPrim
   return (
     <Pressable onPress={onPress} style={s.bellWrap} activeScale={0.88} hitSlop={8}>
       <Animated.View style={bellStyle}>
-        <Text style={[s.bellIcon, { color }]}>🔔</Text>
+        <Text style={[s.bellIcon, { color: tint }]}>🔔</Text>
       </Animated.View>
       {count > 0 ? (
         <Animated.View style={[s.bellBadge, badgeStyle]}>
@@ -145,7 +150,7 @@ export const AnimatedCount = ({
   return <Text style={style}>{displayed}</Text>;
 };
 
-const s = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   badgeWrap: {
     alignSelf: 'flex-start',
   },
@@ -155,7 +160,7 @@ const s = StyleSheet.create({
     borderRadius: 999,
   },
   badgeText: {
-    color: '#FFFFFF',
+    color: colors.textInverse,
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.3,
@@ -186,14 +191,14 @@ const s = StyleSheet.create({
     height: 18,
     borderRadius: 9,
     paddingHorizontal: 4,
-    backgroundColor: theme.colors.accent,
+    backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: theme.colors.surface,
+    borderColor: colors.surface,
   },
   bellBadgeText: {
-    color: '#FFFFFF',
+    color: colors.textInverse,
     fontSize: 10,
     fontWeight: '800',
   },

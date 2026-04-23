@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
-import { theme } from '../theme';
+import { theme, useThemeColors, type ThemeColors } from '../theme';
 import { Pressable } from '../motion';
 
 type EmptyStateCta = {
@@ -25,6 +25,8 @@ type EmptyStateProps = {
 };
 
 export const EmptyState = (props: EmptyStateProps) => {
+  const colors = useThemeColors();
+  const s = React.useMemo(() => makeStyles(colors), [colors]);
   const icon = props.icon ?? '📭';
   const title = props.title ?? props.text ?? '';
   const { body, cta } = props;
@@ -45,7 +47,7 @@ export const EmptyState = (props: EmptyStateProps) => {
   );
 };
 
-const s = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   empty: {
     flex: 1,
     justifyContent: 'center',
@@ -58,7 +60,7 @@ const s = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: theme.colors.surfaceAlt,
+    backgroundColor: colors.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: theme.spacing.md,
@@ -66,13 +68,13 @@ const s = StyleSheet.create({
   icon: { fontSize: 28 },
   title: {
     ...theme.typography.bodyBold,
-    color: theme.colors.textPrimary,
+    color: colors.textPrimary,
     textAlign: 'center',
     marginBottom: theme.spacing.xs,
   },
   body: {
     ...theme.typography.caption,
-    color: theme.colors.textTertiary,
+    color: colors.textTertiary,
     textAlign: 'center',
     maxWidth: 320,
   },
@@ -81,12 +83,12 @@ const s = StyleSheet.create({
     paddingHorizontal: theme.spacing.xl,
     paddingVertical: theme.spacing.md,
     borderRadius: theme.borderRadius.full,
-    backgroundColor: theme.colors.primary,
+    backgroundColor: colors.primary,
     ...theme.shadows.sm,
   },
   ctaText: {
     ...theme.typography.bodyBold,
-    color: theme.colors.textInverse,
+    color: colors.textInverse,
     letterSpacing: 0.2,
   },
 });

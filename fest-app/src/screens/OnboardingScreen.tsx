@@ -17,7 +17,7 @@ import Animated, {
   interpolate,
   Extrapolation,
 } from 'react-native-reanimated';
-import { theme } from '../theme';
+import { theme, useThemeColors, type ThemeColors } from '../theme';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { Aurora, FadeIn, Pressable, SplitText, springs } from '../motion';
 
@@ -56,6 +56,8 @@ type Props = {
 };
 
 export const OnboardingScreen = ({ onFinish }: Props) => {
+  const colors = useThemeColors();
+  const s = React.useMemo(() => makeStyles(colors), [colors]);
   const window = useWindowDimensions();
   const pageWidth = Math.min(window.width, WEB_MAX_WIDTH);
   const scrollRef = React.useRef<ScrollView>(null);
@@ -107,7 +109,7 @@ export const OnboardingScreen = ({ onFinish }: Props) => {
           >
             {SLIDES.map((slide, i) => (
               <View key={i} style={[s.page, { width: pageWidth }]}>
-                <Slide slide={slide} active={i === index} />
+                <SlideView slide={slide} active={i === index} />
               </View>
             ))}
           </ScrollView>
@@ -129,36 +131,42 @@ export const OnboardingScreen = ({ onFinish }: Props) => {
   );
 };
 
-const Slide = ({ slide, active }: { slide: Slide; active: boolean }) => (
-  <View style={s.slide}>
-    <FadeIn delay={60} direction="down" distance={8}>
-      <Text style={s.eyebrow}>{slide.eyebrow}</Text>
-    </FadeIn>
-    <View style={s.iconWrap}>
-      <FadeIn delay={120} direction="up" distance={12}>
-        <View style={s.iconCircle}>
-          <Text style={s.icon}>{slide.icon}</Text>
-        </View>
+const SlideView = ({ slide, active }: { slide: Slide; active: boolean }) => {
+  const colors = useThemeColors();
+  const s = React.useMemo(() => makeStyles(colors), [colors]);
+  return (
+    <View style={s.slide}>
+      <FadeIn delay={60} direction="down" distance={8}>
+        <Text style={s.eyebrow}>{slide.eyebrow}</Text>
+      </FadeIn>
+      <View style={s.iconWrap}>
+        <FadeIn delay={120} direction="up" distance={12}>
+          <View style={s.iconCircle}>
+            <Text style={s.icon}>{slide.icon}</Text>
+          </View>
+        </FadeIn>
+      </View>
+      {active ? (
+        <SplitText
+          text={slide.title}
+          style={s.title}
+          delay={220}
+          step={28}
+          distance={20}
+        />
+      ) : (
+        <Text style={s.title}>{slide.title}</Text>
+      )}
+      <FadeIn delay={520} direction="up" distance={10}>
+        <Text style={s.body}>{slide.body}</Text>
       </FadeIn>
     </View>
-    {active ? (
-      <SplitText
-        text={slide.title}
-        style={s.title}
-        delay={220}
-        step={28}
-        distance={20}
-      />
-    ) : (
-      <Text style={s.title}>{slide.title}</Text>
-    )}
-    <FadeIn delay={520} direction="up" distance={10}>
-      <Text style={s.body}>{slide.body}</Text>
-    </FadeIn>
-  </View>
-);
+  );
+};
 
 const Dot = ({ active }: { active: boolean }) => {
+  const colors = useThemeColors();
+  const s = React.useMemo(() => makeStyles(colors), [colors]);
   const progress = useSharedValue(active ? 1 : 0);
   React.useEffect(() => {
     progress.value = withSpring(active ? 1 : 0, springs.smooth);
@@ -169,14 +177,14 @@ const Dot = ({ active }: { active: boolean }) => {
     return {
       width,
       opacity,
-      backgroundColor: active ? theme.colors.primary : theme.colors.textTertiary,
+      backgroundColor: active ? colors.primary : colors.textTertiary,
     };
   });
   return <Animated.View style={[s.dot, style]} />;
 };
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.colors.background },
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
   container: { flex: 1, justifyContent: 'space-between' },
   topRow: {
     flexDirection: 'row',
@@ -189,11 +197,11 @@ const s = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
     letterSpacing: 5,
-    color: theme.colors.primaryDark,
+    color: colors.primaryDark,
   },
   skip: {
     ...theme.typography.caption,
-    color: theme.colors.textSecondary,
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   skipPlaceholder: { width: 80 },
@@ -213,7 +221,7 @@ const s = StyleSheet.create({
     fontFamily: theme.fonts.displayMedium,
     fontSize: 11,
     letterSpacing: 4,
-    color: theme.colors.accent,
+    color: colors.accent,
     textTransform: 'uppercase',
     textAlign: 'center',
     marginBottom: theme.spacing.lg,
@@ -226,9 +234,9 @@ const s = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: 'rgba(255,255,255,0.75)',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: 'rgba(108,92,231,0.25)',
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
     ...Platform.select({
@@ -241,14 +249,14 @@ const s = StyleSheet.create({
     fontFamily: theme.fonts.display,
     fontSize: Platform.OS === 'web' ? 32 : 28,
     lineHeight: Platform.OS === 'web' ? 38 : 34,
-    color: theme.colors.primaryDark,
+    color: colors.primaryDark,
     letterSpacing: -1,
     textAlign: 'center',
     marginBottom: theme.spacing.lg,
   },
   body: {
     ...theme.typography.body,
-    color: theme.colors.textSecondary,
+    color: colors.textSecondary,
     textAlign: 'center',
     maxWidth: 420,
   },
@@ -268,7 +276,7 @@ const s = StyleSheet.create({
     paddingBottom: Platform.select({ web: theme.spacing.xxl, default: theme.spacing.xxxl }),
   },
   primary: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: colors.primary,
     paddingVertical: Platform.select({ web: theme.spacing.md, default: theme.spacing.lg }),
     borderRadius: theme.borderRadius.full,
     alignItems: 'center',
@@ -278,7 +286,7 @@ const s = StyleSheet.create({
   primaryText: {
     ...theme.typography.bodyBold,
     fontSize: 16,
-    color: theme.colors.textInverse,
+    color: colors.textInverse,
     letterSpacing: 0.3,
   },
 });

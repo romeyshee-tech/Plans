@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Platform, FlatList, ActivityIndicator } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { theme } from '../theme';
+import { theme, useThemeColors, type ThemeColors } from '../theme';
 import { useNotificationsStore } from '../stores/notificationsStore';
 import { formatTimeAgo } from '../utils/dates';
 import { EmptyState } from '../components/EmptyState';
@@ -38,17 +38,19 @@ const TYPE_ICONS: Record<NotificationType, string> = {
   friend_request: '🤝',
 };
 
-const TYPE_ACCENT: Record<NotificationType, string> = {
-  plan_invite: theme.colors.primary,
-  group_invite: theme.colors.accent,
-  proposal_created: theme.colors.info,
-  plan_finalized: theme.colors.success,
-  plan_unfinalized: theme.colors.thinking,
-  event_time_changed: theme.colors.warning,
-  event_cancelled: theme.colors.error,
-  plan_reminder: theme.colors.primaryLight,
-  plan_completed: theme.colors.success,
-  friend_request: theme.colors.accent,
+const getTypeAccent = (colors: ThemeColors, type: NotificationType): string => {
+  switch (type) {
+    case 'plan_invite': return colors.primary;
+    case 'group_invite': return colors.accent;
+    case 'proposal_created': return colors.info;
+    case 'plan_finalized': return colors.success;
+    case 'plan_unfinalized': return colors.thinking;
+    case 'event_time_changed': return colors.warning;
+    case 'event_cancelled': return colors.error;
+    case 'plan_reminder': return colors.primaryLight;
+    case 'plan_completed': return colors.success;
+    case 'friend_request': return colors.accent;
+  }
 };
 
 const PLAN_TYPES: NotificationType[] = ['plan_invite', 'proposal_created', 'plan_finalized', 'plan_unfinalized', 'plan_reminder', 'plan_completed'];
@@ -57,6 +59,8 @@ const EVENT_TYPES: NotificationType[] = ['event_time_changed', 'event_cancelled'
 const USER_TYPES: NotificationType[] = ['friend_request'];
 
 export const NotificationsScreen = ({ navigation }: Props) => {
+  const colors = useThemeColors();
+  const s = React.useMemo(() => makeStyles(colors), [colors]);
   const { notifications, markRead, markAllRead, unreadCount, loading, error, fetchNotifications } = useNotificationsStore();
 
   React.useEffect(() => { fetchNotifications(); }, []);
@@ -86,7 +90,7 @@ export const NotificationsScreen = ({ navigation }: Props) => {
 
   const renderItem = ({ item, index }: { item: typeof notifications[0]; index: number }) => {
     const payload = item.payload as Record<string, string>;
-    const accent = TYPE_ACCENT[item.type];
+    const accent = getTypeAccent(colors, item.type);
     return (
       <FadeIn delay={index * 55} direction="up" distance={14}>
         <Tilt style={[s.card, !item.read && s.cardUnread]} maxTilt={3} liftOnHover={2}>
@@ -146,7 +150,7 @@ export const NotificationsScreen = ({ navigation }: Props) => {
           {error ? <Text style={s.errorBanner}>{error}</Text> : null}
 
           {loading && notifications.length === 0 ? (
-            <View style={s.loader}><ActivityIndicator size="large" color={theme.colors.primary} /></View>
+            <View style={s.loader}><ActivityIndicator size="large" color={colors.primary} /></View>
           ) : (
             <FlatList
               data={notifications}
@@ -170,8 +174,8 @@ export const NotificationsScreen = ({ navigation }: Props) => {
   );
 };
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.colors.background },
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
   inner: { flex: 1 },
   topRow: {
     flexDirection: 'row',
@@ -189,7 +193,7 @@ const s = StyleSheet.create({
     fontFamily: theme.fonts.displayMedium,
     fontSize: 11,
     letterSpacing: 4,
-    color: theme.colors.accent,
+    color: colors.accent,
     textTransform: 'uppercase',
     marginBottom: 4,
   },
@@ -197,22 +201,22 @@ const s = StyleSheet.create({
     fontFamily: theme.fonts.display,
     fontSize: Platform.OS === 'web' ? 40 : 32,
     lineHeight: Platform.OS === 'web' ? 44 : 36,
-    color: theme.colors.primaryDark,
+    color: colors.primaryDark,
     letterSpacing: -1.5,
   },
   headerSub: {
     marginTop: 6,
     fontSize: 13,
     fontWeight: '600',
-    color: theme.colors.textSecondary,
+    color: colors.textSecondary,
     letterSpacing: 0.2,
   },
-  backText: { ...theme.typography.body, color: theme.colors.primary, fontWeight: '700' },
-  markAll: { ...theme.typography.caption, color: theme.colors.primary, fontWeight: '700' },
+  backText: { ...theme.typography.body, color: colors.primary, fontWeight: '700' },
+  markAll: { ...theme.typography.caption, color: colors.primary, fontWeight: '700' },
   markAllPlaceholder: { width: 80 },
   list: { paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.xxxl, gap: 10 },
   card: {
-    backgroundColor: theme.colors.surface,
+    backgroundColor: colors.surface,
     borderRadius: theme.borderRadius.xxl,
     borderWidth: 1,
     borderColor: 'rgba(108,92,231,0.08)',
@@ -222,8 +226,8 @@ const s = StyleSheet.create({
     }),
   },
   cardUnread: {
-    borderColor: theme.colors.primary + '44',
-    backgroundColor: theme.colors.primary + '06',
+    borderColor: colors.primary + '44',
+    backgroundColor: colors.primary + '06',
   },
   cardInner: {
     flexDirection: 'row',
@@ -245,7 +249,7 @@ const s = StyleSheet.create({
   typeLabel: {
     fontSize: 14,
     fontWeight: '800',
-    color: theme.colors.textPrimary,
+    color: colors.textPrimary,
     flex: 1,
     letterSpacing: -0.2,
   },
@@ -253,27 +257,27 @@ const s = StyleSheet.create({
     width: 9,
     height: 9,
     borderRadius: 5,
-    backgroundColor: theme.colors.accent,
-    shadowColor: theme.colors.accent,
+    backgroundColor: colors.accent,
+    shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.7,
     shadowRadius: 8,
     elevation: 3,
   },
-  payloadText: { ...theme.typography.caption, color: theme.colors.textSecondary, marginTop: 2 },
+  payloadText: { ...theme.typography.caption, color: colors.textSecondary, marginTop: 2 },
   payloadTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: theme.colors.primary,
+    color: colors.primary,
     marginTop: 4,
   },
-  time: { ...theme.typography.small, color: theme.colors.textTertiary, marginTop: theme.spacing.xs },
+  time: { ...theme.typography.small, color: colors.textTertiary, marginTop: theme.spacing.xs },
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   errorBanner: {
     ...theme.typography.caption,
-    color: theme.colors.error,
+    color: colors.error,
     textAlign: 'center',
     padding: theme.spacing.md,
-    backgroundColor: theme.colors.error + '11',
+    backgroundColor: colors.error + '11',
   },
 });

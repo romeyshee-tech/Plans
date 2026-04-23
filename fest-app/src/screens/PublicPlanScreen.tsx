@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { theme } from '../theme';
+import { theme, useThemeColors, type ThemeColors } from '../theme';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { EmptyState } from '../components/EmptyState';
 import { Aurora, FadeIn, Pressable } from '../motion';
@@ -15,6 +15,8 @@ import type { RootStackParamList } from '../navigation/types';
 type Props = NativeStackScreenProps<RootStackParamList, 'PublicPlan'>;
 
 export const PublicPlanScreen = ({ route }: Props) => {
+  const colors = useThemeColors();
+  const s = React.useMemo(() => makeStyles(colors), [colors]);
   const { token } = route.params;
   const navigation = useNavigation<any>();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -86,7 +88,7 @@ export const PublicPlanScreen = ({ route }: Props) => {
       <ScreenContainer>
         <View style={s.inner}>
           {loading ? (
-            <ActivityIndicator size="large" color={theme.colors.primary} style={s.loader} />
+            <ActivityIndicator size="large" color={colors.primary} style={s.loader} />
           ) : error ? (
             <EmptyState text={error} />
           ) : preview ? (
@@ -136,18 +138,18 @@ export const PublicPlanScreen = ({ route }: Props) => {
   );
 };
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.colors.surface },
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.surface },
   inner: { flex: 1, padding: theme.spacing.lg, gap: theme.spacing.md, justifyContent: 'center' },
   loader: { marginTop: theme.spacing.xl },
-  eyebrow: { ...theme.typography.caption, color: theme.colors.primary, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
-  title: { ...theme.typography.h1, color: theme.colors.textPrimary },
-  meta: { ...theme.typography.caption, color: theme.colors.textSecondary },
-  author: { ...theme.typography.caption, color: theme.colors.textTertiary },
-  row: { ...theme.typography.body, color: theme.colors.textPrimary, marginTop: theme.spacing.xs },
+  eyebrow: { ...theme.typography.caption, color: colors.primary, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
+  title: { ...theme.typography.h1, color: colors.textPrimary },
+  meta: { ...theme.typography.caption, color: colors.textSecondary },
+  author: { ...theme.typography.caption, color: colors.textTertiary },
+  row: { ...theme.typography.body, color: colors.textPrimary, marginTop: theme.spacing.xs },
   actions: { marginTop: theme.spacing.lg, gap: theme.spacing.sm },
-  primaryBtn: { backgroundColor: theme.colors.primary, paddingVertical: theme.spacing.md, borderRadius: theme.borderRadius.full, alignItems: 'center', ...theme.shadows.md },
-  primaryBtnText: { ...theme.typography.bodyBold, color: theme.colors.textInverse, fontWeight: '700' },
-  hintBox: { padding: theme.spacing.md, borderRadius: theme.borderRadius.md, backgroundColor: theme.colors.primary + '10' },
-  hintText: { ...theme.typography.caption, color: theme.colors.textSecondary, textAlign: 'center' },
+  primaryBtn: { backgroundColor: colors.primary, paddingVertical: theme.spacing.md, borderRadius: theme.borderRadius.full, alignItems: 'center', ...theme.shadows.md },
+  primaryBtnText: { ...theme.typography.bodyBold, color: colors.textInverse, fontWeight: '700' },
+  hintBox: { padding: theme.spacing.md, borderRadius: theme.borderRadius.md, backgroundColor: colors.primary + '10' },
+  hintText: { ...theme.typography.caption, color: colors.textSecondary, textAlign: 'center' },
 });

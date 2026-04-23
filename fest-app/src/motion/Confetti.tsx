@@ -10,7 +10,7 @@ import Animated, {
   Extrapolation,
   Easing,
 } from 'react-native-reanimated';
-import { theme } from '../theme';
+import { lightColors } from '../theme';
 
 type Props = {
   trigger: boolean;
@@ -120,11 +120,11 @@ const Piece = ({
 };
 
 const CONFETTI_COLORS = [
-  theme.colors.primary,
-  theme.colors.accent,
-  theme.colors.accentLight,
-  theme.colors.info,
-  theme.colors.success,
+  lightColors.primary,
+  lightColors.accent,
+  lightColors.accentLight,
+  lightColors.info,
+  lightColors.success,
   '#A29BFE',
   '#FD79A8',
 ];
@@ -132,7 +132,7 @@ const CONFETTI_COLORS = [
 // Tiny pulse halo that fires from a point — used for "level up" moments.
 export const PulseHalo = ({
   trigger,
-  color = theme.colors.primary,
+  color = lightColors.primary,
   size = 120,
 }: {
   trigger: boolean;

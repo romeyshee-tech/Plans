@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TextInput, FlatList, Image, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { theme } from '../theme';
+import { theme, useThemeColors, type ThemeColors } from '../theme';
 import { formatDateShort } from '../utils/dates';
 import { CATEGORY_CHIPS } from '../utils/constants';
 import { EmptyState } from '../components/EmptyState';
@@ -20,6 +20,8 @@ const DATE_OPTIONS: { key: DateFilter; label: string }[] = [
 ];
 
 export const SearchScreen = () => {
+  const colors = useThemeColors();
+  const s = React.useMemo(() => makeStyles(colors), [colors]);
   const navigation = useNavigation();
   const [results, setResults] = useState<Event[]>([]);
   const [total, setTotal] = useState(0);
@@ -132,7 +134,7 @@ export const SearchScreen = () => {
               <TextInput
                 style={s.searchInput}
                 placeholder="Мероприятия, места..."
-                placeholderTextColor={theme.colors.textTertiary}
+                placeholderTextColor={colors.textTertiary}
                 value={query}
                 onChangeText={setQuery}
                 onSubmitEditing={doSearch}
@@ -218,28 +220,28 @@ export const SearchScreen = () => {
   );
 };
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.colors.background },
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
   inner: { flex: 1 },
   hero: { paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.xl, paddingBottom: theme.spacing.md, ...Platform.select({ web: { paddingTop: theme.spacing.lg } }) },
-  eyebrow: { fontFamily: theme.fonts.displayMedium, fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: theme.colors.accent, marginBottom: 6 },
-  heroTitle: { fontFamily: theme.fonts.display, fontSize: Platform.OS === 'web' ? 38 : 32, lineHeight: Platform.OS === 'web' ? 42 : 36, color: theme.colors.primaryDark, letterSpacing: -1.2 },
+  eyebrow: { fontFamily: theme.fonts.displayMedium, fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: colors.accent, marginBottom: 6 },
+  heroTitle: { fontFamily: theme.fonts.display, fontSize: Platform.OS === 'web' ? 38 : 32, lineHeight: Platform.OS === 'web' ? 42 : 36, color: colors.primaryDark, letterSpacing: -1.2 },
   searchRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: theme.spacing.lg, marginBottom: theme.spacing.md, backgroundColor: 'rgba(255,255,255,0.82)', borderRadius: theme.borderRadius.full, borderWidth: 1, borderColor: 'rgba(108,92,231,0.2)', paddingHorizontal: theme.spacing.lg, ...theme.shadows.sm, ...Platform.select({ web: { backdropFilter: 'blur(12px)' } as any }) },
-  searchIcon: { fontSize: 18, color: theme.colors.primary, marginRight: theme.spacing.sm },
-  searchInput: { flex: 1, paddingVertical: Platform.select({ web: theme.spacing.sm, default: theme.spacing.md }), fontSize: 16, color: theme.colors.textPrimary },
+  searchIcon: { fontSize: 18, color: colors.primary, marginRight: theme.spacing.sm },
+  searchInput: { flex: 1, paddingVertical: Platform.select({ web: theme.spacing.sm, default: theme.spacing.md }), fontSize: 16, color: colors.textPrimary },
   chipsRow: { paddingLeft: theme.spacing.lg, marginBottom: theme.spacing.xs },
   chipList: { paddingRight: theme.spacing.lg, gap: theme.spacing.sm },
   chip: { backgroundColor: 'rgba(255,255,255,0.72)', borderRadius: theme.borderRadius.full, paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.sm, borderWidth: 1, borderColor: 'rgba(108,92,231,0.18)' },
-  chipActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary, ...theme.shadows.sm },
-  chipText: { ...theme.typography.caption, color: theme.colors.textSecondary, fontWeight: '600' },
-  chipTextActive: { color: theme.colors.textInverse, fontWeight: '700' },
-  resultCount: { ...theme.typography.caption, color: theme.colors.textTertiary, paddingHorizontal: theme.spacing.lg, marginTop: theme.spacing.sm, marginBottom: theme.spacing.sm },
+  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary, ...theme.shadows.sm },
+  chipText: { ...theme.typography.caption, color: colors.textSecondary, fontWeight: '600' },
+  chipTextActive: { color: colors.textInverse, fontWeight: '700' },
+  resultCount: { ...theme.typography.caption, color: colors.textTertiary, paddingHorizontal: theme.spacing.lg, marginTop: theme.spacing.sm, marginBottom: theme.spacing.sm },
   list: { paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.xxxl },
   resultCard: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.82)', borderRadius: theme.borderRadius.lg, marginBottom: theme.spacing.sm, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(108,92,231,0.12)', ...theme.shadows.sm, ...Platform.select({ web: { backdropFilter: 'blur(10px)' } as any }) },
   resultImage: { width: Platform.select({ web: 80, default: 100 }), height: Platform.select({ web: 72, default: 90 }) },
   resultBody: { flex: 1, padding: Platform.select({ web: theme.spacing.sm, default: theme.spacing.md }), justifyContent: 'center' },
-  resultTitle: { ...theme.typography.bodyBold, color: theme.colors.textPrimary, marginBottom: 2 },
-  resultVenue: { ...theme.typography.caption, color: theme.colors.textSecondary, marginBottom: 2 },
-  resultMeta: { ...theme.typography.small, color: theme.colors.textTertiary },
-  errorBanner: { ...theme.typography.caption, color: theme.colors.error, textAlign: 'center', padding: theme.spacing.md, backgroundColor: theme.colors.error + '11' },
+  resultTitle: { ...theme.typography.bodyBold, color: colors.textPrimary, marginBottom: 2 },
+  resultVenue: { ...theme.typography.caption, color: colors.textSecondary, marginBottom: 2 },
+  resultMeta: { ...theme.typography.small, color: colors.textTertiary },
+  errorBanner: { ...theme.typography.caption, color: colors.error, textAlign: 'center', padding: theme.spacing.md, backgroundColor: colors.error + '11' },
 });

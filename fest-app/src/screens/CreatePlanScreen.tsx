@@ -1,10 +1,11 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { theme } from '../theme';
+import { useThemeColors } from '../theme';
 import { CreatePlanForm } from './CreatePlanForm';
 
 export const CreatePlanScreen = () => {
+  const colors = useThemeColors();
   const navigation = useNavigation();
 
   const handleDone = (newPlanId: string) => {
@@ -15,12 +16,12 @@ export const CreatePlanScreen = () => {
   };
 
   return (
-    <View style={s.container}>
+    <View style={[s.container, { backgroundColor: colors.background }]}>
       <CreatePlanForm onDone={handleDone} />
     </View>
   );
 };
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background },
+  container: { flex: 1 },
 });

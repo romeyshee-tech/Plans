@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, Switch, Platform, Alert } from 'react-native';
-import { theme } from '../theme';
+import { theme, useThemeColors, type ThemeColors } from '../theme';
 import { useAuthStore } from '../stores/authStore';
 import { usePlansStore } from '../stores/plansStore';
 import { useGroupsStore } from '../stores/groupsStore';
@@ -46,6 +46,8 @@ const ACTIVITY_ICONS: Record<ActivityType, string> = {
 };
 
 export const CreatePlanForm = ({ linkedEventId, linkedEventTitle, linkedEventVenue, linkedEventTime, onDone, preselectedGroupIds }: Props) => {
+  const colors = useThemeColors();
+  const s = React.useMemo(() => makeStyles(colors), [colors]);
   const user = useAuthStore((s) => s.user);
   const apiCreatePlan = usePlansStore((s) => s.apiCreatePlan);
   const planError = usePlansStore((s) => s.error);
@@ -170,7 +172,7 @@ export const CreatePlanForm = ({ linkedEventId, linkedEventTitle, linkedEventVen
                   count={STEP_KEYS.length}
                   activeIndex={activeStepIndex}
                   containerWidth={stepperWidth}
-                  color={theme.colors.primary}
+                  color={colors.primary}
                   style={s.stepIndicator}
                 />
                 {STEP_KEYS.map((sKey, i) => {
@@ -222,20 +224,20 @@ export const CreatePlanForm = ({ linkedEventId, linkedEventTitle, linkedEventVen
                   })}
                 </View>
                 <Text style={s.label}>Название плана</Text>
-                <TextInput style={s.input} placeholder="Кино в субботу" placeholderTextColor={theme.colors.textTertiary} value={title} onChangeText={setTitle} />
+                <TextInput style={s.input} placeholder="Кино в субботу" placeholderTextColor={colors.textTertiary} value={title} onChangeText={setTitle} />
                 <Text style={s.label}>Место {isFromEvent && <Text style={s.hint}>(из мероприятия)</Text>}</Text>
-                <TextInput style={s.input} placeholder="Решим позже..." placeholderTextColor={theme.colors.textTertiary} value={placeText} onChangeText={setPlaceText} editable={!isFromEvent} />
+                <TextInput style={s.input} placeholder="Решим позже..." placeholderTextColor={colors.textTertiary} value={placeText} onChangeText={setPlaceText} editable={!isFromEvent} />
                 <Text style={s.label}>Время {isFromEvent && <Text style={s.hint}>(из мероприятия)</Text>}</Text>
-                <TextInput style={s.input} placeholder="Обсудим..." placeholderTextColor={theme.colors.textTertiary} value={timeText} onChangeText={setTimeText} editable={!isFromEvent} />
+                <TextInput style={s.input} placeholder="Обсудим..." placeholderTextColor={colors.textTertiary} value={timeText} onChangeText={setTimeText} editable={!isFromEvent} />
 
                 <View style={s.switchRow}>
                   <Text style={s.label}>Встретиться до мероприятия</Text>
-                  <Switch value={preMeetEnabled} onValueChange={setPreMeetEnabled} trackColor={{ true: theme.colors.primaryLight, false: theme.colors.border }} />
+                  <Switch value={preMeetEnabled} onValueChange={setPreMeetEnabled} trackColor={{ true: colors.primaryLight, false: colors.border }} />
                 </View>
                 {preMeetEnabled && (
                   <>
-                    <TextInput style={s.input} placeholder="Место встречи" placeholderTextColor={theme.colors.textTertiary} value={preMeetPlace} onChangeText={setPreMeetPlace} />
-                    <TextInput style={s.input} placeholder="Время встречи" placeholderTextColor={theme.colors.textTertiary} value={preMeetTime} onChangeText={setPreMeetTime} />
+                    <TextInput style={s.input} placeholder="Место встречи" placeholderTextColor={colors.textTertiary} value={preMeetPlace} onChangeText={setPreMeetPlace} />
+                    <TextInput style={s.input} placeholder="Время встречи" placeholderTextColor={colors.textTertiary} value={preMeetTime} onChangeText={setPreMeetTime} />
                   </>
                 )}
 
@@ -338,8 +340,8 @@ export const CreatePlanForm = ({ linkedEventId, linkedEventTitle, linkedEventVen
   );
 };
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.colors.background },
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
   container: { flex: 1 },
   heroBlock: {
     paddingHorizontal: theme.spacing.lg,
@@ -350,7 +352,7 @@ const s = StyleSheet.create({
     fontFamily: theme.fonts.displayMedium,
     fontSize: 11,
     letterSpacing: 4,
-    color: theme.colors.accent,
+    color: colors.accent,
     textTransform: 'uppercase',
     marginBottom: 4,
   },
@@ -358,7 +360,7 @@ const s = StyleSheet.create({
     fontFamily: theme.fonts.display,
     fontSize: Platform.OS === 'web' ? 44 : 36,
     lineHeight: Platform.OS === 'web' ? 48 : 40,
-    color: theme.colors.primaryDark,
+    color: colors.primaryDark,
     letterSpacing: -1.8,
   },
   stepperRow: {
@@ -373,30 +375,30 @@ const s = StyleSheet.create({
     ...Platform.select({ web: { backdropFilter: 'blur(16px)' } as any }),
   },
   stepperInner: { flexDirection: 'row', position: 'relative' },
-  stepIndicator: { position: 'absolute', top: 0, bottom: 0, left: 0, borderRadius: theme.borderRadius.full, backgroundColor: theme.colors.primary },
+  stepIndicator: { position: 'absolute', top: 0, bottom: 0, left: 0, borderRadius: theme.borderRadius.full, backgroundColor: colors.primary },
   stepBtn: { flex: 1, paddingVertical: 10, alignItems: 'center', justifyContent: 'center', zIndex: 2 },
-  stepLabel: { ...theme.typography.caption, color: theme.colors.textSecondary, fontWeight: '700', letterSpacing: 0.3 },
-  stepLabelActive: { color: theme.colors.textInverse },
+  stepLabel: { ...theme.typography.caption, color: colors.textSecondary, fontWeight: '700', letterSpacing: 0.3 },
+  stepLabelActive: { color: colors.textInverse },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.xxxl, ...Platform.select({ web: { paddingBottom: theme.spacing.xxl } }) },
-  linkedBanner: { backgroundColor: theme.colors.primaryLight + '22', borderRadius: theme.borderRadius.md, padding: theme.spacing.md, marginBottom: theme.spacing.lg, borderWidth: 1, borderColor: theme.colors.primary + '33' },
-  linkedText: { ...theme.typography.caption, color: theme.colors.primaryDark, fontWeight: '600' },
-  label: { ...theme.typography.h4, color: theme.colors.textPrimary, marginBottom: theme.spacing.sm, marginTop: theme.spacing.md, ...Platform.select({ web: { marginTop: theme.spacing.sm } }) },
-  hint: { ...theme.typography.caption, color: theme.colors.textTertiary, fontWeight: '400' },
+  linkedBanner: { backgroundColor: colors.primaryLight + '22', borderRadius: theme.borderRadius.md, padding: theme.spacing.md, marginBottom: theme.spacing.lg, borderWidth: 1, borderColor: colors.primary + '33' },
+  linkedText: { ...theme.typography.caption, color: colors.primaryDark, fontWeight: '600' },
+  label: { ...theme.typography.h4, color: colors.textPrimary, marginBottom: theme.spacing.sm, marginTop: theme.spacing.md, ...Platform.select({ web: { marginTop: theme.spacing.sm } }) },
+  hint: { ...theme.typography.caption, color: colors.textTertiary, fontWeight: '400' },
   activityGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm, marginBottom: theme.spacing.lg },
   activityTilt: {},
   activityBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.78)', borderRadius: theme.borderRadius.full, paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.sm, borderWidth: 1, borderColor: 'rgba(108,92,231,0.15)' },
-  activityBtnActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
+  activityBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   activityIcon: { fontSize: 16 },
   activityIconActive: {},
-  activityLabel: { ...theme.typography.caption, color: theme.colors.textSecondary, fontWeight: '700' },
-  activityLabelActive: { color: theme.colors.textInverse, fontWeight: '800' },
+  activityLabel: { ...theme.typography.caption, color: colors.textSecondary, fontWeight: '700' },
+  activityLabelActive: { color: colors.textInverse, fontWeight: '800' },
   input: {
     backgroundColor: 'rgba(255,255,255,0.78)',
     borderRadius: theme.borderRadius.md,
     padding: theme.spacing.lg,
     fontSize: 16,
-    color: theme.colors.textPrimary,
+    color: colors.textPrimary,
     borderWidth: 1,
     borderColor: 'rgba(108,92,231,0.18)',
     marginBottom: theme.spacing.md,
@@ -405,33 +407,33 @@ const s = StyleSheet.create({
   switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: theme.spacing.md },
   groupTilt: {},
   groupCard: { backgroundColor: 'rgba(255,255,255,0.78)', borderRadius: theme.borderRadius.lg, padding: theme.spacing.lg, marginBottom: theme.spacing.sm, borderWidth: 1, borderColor: 'rgba(108,92,231,0.15)' },
-  groupCardActive: { borderColor: theme.colors.primary, backgroundColor: theme.colors.primaryLight + '22' },
-  groupName: { ...theme.typography.bodyBold, color: theme.colors.textPrimary },
-  groupNameActive: { color: theme.colors.primaryDark },
-  groupMeta: { ...theme.typography.caption, color: theme.colors.textTertiary, marginTop: theme.spacing.xs },
-  divider: { height: 1, backgroundColor: theme.colors.borderLight, marginVertical: theme.spacing.lg },
-  selectedCount: { ...theme.typography.caption, color: theme.colors.primary, fontWeight: '700' },
+  groupCardActive: { borderColor: colors.primary, backgroundColor: colors.primaryLight + '22' },
+  groupName: { ...theme.typography.bodyBold, color: colors.textPrimary },
+  groupNameActive: { color: colors.primaryDark },
+  groupMeta: { ...theme.typography.caption, color: colors.textTertiary, marginTop: theme.spacing.xs },
+  divider: { height: 1, backgroundColor: colors.borderLight, marginVertical: theme.spacing.lg },
+  selectedCount: { ...theme.typography.caption, color: colors.primary, fontWeight: '700' },
   friendTilt: {},
   friendRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.78)', borderRadius: theme.borderRadius.md, padding: theme.spacing.md, marginBottom: theme.spacing.sm, borderWidth: 1, borderColor: 'rgba(108,92,231,0.10)', ...Platform.select({ web: { paddingVertical: theme.spacing.sm } }) },
-  friendRowActive: { backgroundColor: theme.colors.primaryLight + '20', borderColor: theme.colors.primary + '55' },
-  friendAvatar: { width: Platform.select({ web: 32, default: 40 }), height: Platform.select({ web: 32, default: 40 }), borderRadius: Platform.select({ web: 16, default: 20 }), backgroundColor: theme.colors.primaryLight + '44', alignItems: 'center', justifyContent: 'center', marginRight: theme.spacing.md },
-  friendLetter: { fontSize: Platform.select({ web: 14, default: 18 }), fontWeight: '800', color: theme.colors.primaryDark },
-  friendName: { ...theme.typography.body, color: theme.colors.textPrimary, flex: 1 },
-  friendNameActive: { color: theme.colors.primaryDark, fontWeight: '700' },
-  checkMark: { ...theme.typography.h3, color: theme.colors.primary, fontWeight: '800' },
-  nextBtn: { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.full, paddingVertical: theme.spacing.lg, alignItems: 'center', marginTop: theme.spacing.xl, ...Platform.select({ web: { paddingVertical: theme.spacing.md, marginTop: theme.spacing.lg } }) },
-  nextBtnText: { color: theme.colors.textInverse, fontWeight: '800', fontSize: 16, letterSpacing: 0.3 },
+  friendRowActive: { backgroundColor: colors.primaryLight + '20', borderColor: colors.primary + '55' },
+  friendAvatar: { width: Platform.select({ web: 32, default: 40 }), height: Platform.select({ web: 32, default: 40 }), borderRadius: Platform.select({ web: 16, default: 20 }), backgroundColor: colors.primaryLight + '44', alignItems: 'center', justifyContent: 'center', marginRight: theme.spacing.md },
+  friendLetter: { fontSize: Platform.select({ web: 14, default: 18 }), fontWeight: '800', color: colors.primaryDark },
+  friendName: { ...theme.typography.body, color: colors.textPrimary, flex: 1 },
+  friendNameActive: { color: colors.primaryDark, fontWeight: '700' },
+  checkMark: { ...theme.typography.h3, color: colors.primary, fontWeight: '800' },
+  nextBtn: { backgroundColor: colors.primary, borderRadius: theme.borderRadius.full, paddingVertical: theme.spacing.lg, alignItems: 'center', marginTop: theme.spacing.xl, ...Platform.select({ web: { paddingVertical: theme.spacing.md, marginTop: theme.spacing.lg } }) },
+  nextBtnText: { color: colors.textInverse, fontWeight: '800', fontSize: 16, letterSpacing: 0.3 },
   nextBtnTextDisabled: { opacity: 0.4 },
   btnDisabled: { opacity: 0.55 },
   summaryTilt: {},
   summaryCard: { backgroundColor: 'rgba(255,255,255,0.86)', borderRadius: theme.borderRadius.xl, padding: theme.spacing.xl, marginBottom: theme.spacing.lg, borderWidth: 1, borderColor: 'rgba(108,92,231,0.18)', ...theme.shadows.md, ...Platform.select({ web: { backdropFilter: 'blur(14px)' } as any }) },
-  summaryActivity: { ...theme.typography.caption, color: theme.colors.primary, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: theme.spacing.sm },
-  summaryTitle: { fontFamily: theme.fonts.display, fontSize: 24, lineHeight: 28, color: theme.colors.primaryDark, letterSpacing: -0.6, marginBottom: theme.spacing.sm },
-  summaryMeta: { ...theme.typography.body, color: theme.colors.textSecondary, marginBottom: theme.spacing.xs },
-  summaryMetaMuted: { ...theme.typography.caption, color: theme.colors.textTertiary, fontStyle: 'italic', marginBottom: theme.spacing.xs },
-  createBtn: { backgroundColor: theme.colors.going, borderRadius: theme.borderRadius.full, paddingVertical: theme.spacing.xl, alignItems: 'center', marginTop: theme.spacing.xl, ...theme.shadows.md, ...Platform.select({ web: { paddingVertical: theme.spacing.lg } }) },
-  createBtnText: { color: theme.colors.textInverse, fontWeight: '800', fontSize: 18, letterSpacing: 0.4, ...Platform.select({ web: { fontSize: 16 } }) },
-  errorBanner: { ...theme.typography.caption, color: theme.colors.error, textAlign: 'center', padding: theme.spacing.md, backgroundColor: theme.colors.error + '22', marginTop: theme.spacing.md, borderRadius: theme.borderRadius.md },
-  emptyHint: { ...theme.typography.caption, color: theme.colors.textTertiary, textAlign: 'center', marginTop: theme.spacing.md },
+  summaryActivity: { ...theme.typography.caption, color: colors.primary, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: theme.spacing.sm },
+  summaryTitle: { fontFamily: theme.fonts.display, fontSize: 24, lineHeight: 28, color: colors.primaryDark, letterSpacing: -0.6, marginBottom: theme.spacing.sm },
+  summaryMeta: { ...theme.typography.body, color: colors.textSecondary, marginBottom: theme.spacing.xs },
+  summaryMetaMuted: { ...theme.typography.caption, color: colors.textTertiary, fontStyle: 'italic', marginBottom: theme.spacing.xs },
+  createBtn: { backgroundColor: colors.going, borderRadius: theme.borderRadius.full, paddingVertical: theme.spacing.xl, alignItems: 'center', marginTop: theme.spacing.xl, ...theme.shadows.md, ...Platform.select({ web: { paddingVertical: theme.spacing.lg } }) },
+  createBtnText: { color: colors.textInverse, fontWeight: '800', fontSize: 18, letterSpacing: 0.4, ...Platform.select({ web: { fontSize: 16 } }) },
+  errorBanner: { ...theme.typography.caption, color: colors.error, textAlign: 'center', padding: theme.spacing.md, backgroundColor: colors.error + '22', marginTop: theme.spacing.md, borderRadius: theme.borderRadius.md },
+  emptyHint: { ...theme.typography.caption, color: colors.textTertiary, textAlign: 'center', marginTop: theme.spacing.md },
 });
 

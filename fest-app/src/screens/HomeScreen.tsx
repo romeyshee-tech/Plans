@@ -10,7 +10,7 @@ import Animated, {
   interpolate,
   Extrapolation,
 } from 'react-native-reanimated';
-import { theme } from '../theme';
+import { theme, useThemeColors, type ThemeColors } from '../theme';
 import { useEventsStore } from '../stores/eventsStore';
 import { useNotificationsStore } from '../stores/notificationsStore';
 import { formatDateShort } from '../utils/dates';
@@ -30,6 +30,8 @@ type NavType = CompositeNavigationProp<
 const AnimatedImage = Animated.createAnimatedComponent(Image);
 
 export const HomeScreen = () => {
+  const colors = useThemeColors();
+  const s = React.useMemo(() => makeStyles(colors), [colors]);
   const {
     events,
     interestedIds,
@@ -237,10 +239,10 @@ export const HomeScreen = () => {
   );
 };
 
-const s = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: colors.background,
   },
   topBar: {
     flexDirection: 'row',
@@ -264,34 +266,34 @@ const s = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
     letterSpacing: 5,
-    color: theme.colors.primaryDark,
+    color: colors.primaryDark,
   },
   brandDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
     marginHorizontal: 10,
-    backgroundColor: theme.colors.accent,
+    backgroundColor: colors.accent,
   },
   brandCity: {
     fontFamily: theme.fonts.displayMedium,
     fontSize: 12,
     letterSpacing: 2,
     textTransform: 'uppercase',
-    color: theme.colors.textSecondary,
+    color: colors.textSecondary,
   },
   heroTitle: {
     fontFamily: theme.fonts.display,
     fontSize: Platform.OS === 'web' ? 52 : 44,
     lineHeight: Platform.OS === 'web' ? 56 : 48,
-    color: theme.colors.primaryDark,
+    color: colors.primaryDark,
     letterSpacing: -2,
     marginBottom: theme.spacing.sm,
   },
   heroSub: {
     fontSize: 14,
     fontWeight: '600',
-    color: theme.colors.textSecondary,
+    color: colors.textSecondary,
     letterSpacing: 0.2,
   },
   chipsOuter: {
@@ -306,14 +308,14 @@ const s = StyleSheet.create({
     paddingVertical: 9,
     borderRadius: 999,
     marginRight: 8,
-    backgroundColor: 'rgba(255,255,255,0.7)',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: 'rgba(108,92,231,0.18)',
+    borderColor: colors.border,
   },
   chipActive: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
-    shadowColor: theme.colors.primary,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
@@ -322,13 +324,13 @@ const s = StyleSheet.create({
   chipText: {
     fontSize: 13,
     fontWeight: '700',
-    color: theme.colors.textSecondary,
+    color: colors.textSecondary,
     letterSpacing: 0.2,
   },
-  chipTextActive: { color: theme.colors.textInverse },
+  chipTextActive: { color: colors.textInverse },
   errorBanner: {
     ...theme.typography.caption,
-    color: theme.colors.error,
+    color: colors.error,
     paddingHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.sm,
   },
@@ -340,7 +342,7 @@ const s = StyleSheet.create({
   card: {
     borderRadius: theme.borderRadius.xxl,
     overflow: 'hidden',
-    backgroundColor: theme.colors.surface,
+    backgroundColor: colors.surface,
     ...Platform.select({
       web: {
         boxShadow: '0 20px 40px -20px rgba(108,92,231,0.25)',
@@ -378,7 +380,7 @@ const s = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.8,
     textTransform: 'uppercase',
-    color: theme.colors.textInverse,
+    color: colors.textInverse,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 999,
@@ -393,10 +395,10 @@ const s = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: colors.surface,
   },
-  saveIcon: { fontSize: 18, color: theme.colors.textSecondary },
-  saveIconActive: { color: theme.colors.accent },
+  saveIcon: { fontSize: 18, color: colors.textSecondary },
+  saveIconActive: { color: colors.accent },
   cardBody: {
     padding: theme.spacing.lg,
     ...Platform.select({ web: { padding: theme.spacing.md } }),
@@ -404,18 +406,18 @@ const s = StyleSheet.create({
   cardTitle: {
     fontSize: 19,
     fontWeight: '800',
-    color: theme.colors.textPrimary,
+    color: colors.textPrimary,
     letterSpacing: -0.4,
     marginBottom: 4,
   },
   cardVenue: {
     ...theme.typography.caption,
-    color: theme.colors.textSecondary,
+    color: colors.textSecondary,
     marginBottom: theme.spacing.sm,
   },
   socialProof: {
     ...theme.typography.caption,
-    color: theme.colors.primary,
+    color: colors.primary,
     marginBottom: theme.spacing.sm,
     fontWeight: '700',
   },
@@ -425,37 +427,37 @@ const s = StyleSheet.create({
     gap: theme.spacing.sm,
   },
   interestBtn: {
-    backgroundColor: theme.colors.surfaceAlt,
+    backgroundColor: colors.surfaceAlt,
     borderRadius: theme.borderRadius.full,
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.sm,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: colors.border,
   },
   interestActive: {
-    backgroundColor: theme.colors.primaryLight + '22',
-    borderColor: theme.colors.primaryLight,
+    backgroundColor: colors.primaryLight + '22',
+    borderColor: colors.primaryLight,
   },
   interestText: {
     ...theme.typography.small,
-    color: theme.colors.textSecondary,
+    color: colors.textSecondary,
     fontWeight: '700',
   },
-  interestTextActive: { color: theme.colors.primary, fontWeight: '800' },
+  interestTextActive: { color: colors.primary, fontWeight: '800' },
   planBtn: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: colors.primary,
     borderRadius: theme.borderRadius.full,
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.sm,
     marginLeft: 'auto',
-    shadowColor: theme.colors.primary,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 4,
   },
   planBtnText: {
-    color: theme.colors.textInverse,
+    color: colors.textInverse,
     ...theme.typography.captionBold,
     fontWeight: '800',
     letterSpacing: 0.3,

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Platform, ActivityIndicator } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { theme } from '../theme';
+import { theme, useThemeColors, type ThemeColors } from '../theme';
 import { useAuthStore } from '../stores/authStore';
 import { useGroupsStore } from '../stores/groupsStore';
 import { usePlansStore } from '../stores/plansStore';
@@ -14,6 +14,8 @@ import type { PlansStackParamList } from '../navigation/types';
 type Props = NativeStackScreenProps<PlansStackParamList, 'GroupDetails'>;
 
 export const GroupDetailsScreen = ({ route, navigation }: Props) => {
+  const colors = useThemeColors();
+  const s = React.useMemo(() => makeStyles(colors), [colors]);
   const { groupId } = route.params;
   const groups = useGroupsStore((s) => s.groups);
   const groupsLoading = useGroupsStore((s) => s.loading);
@@ -35,7 +37,7 @@ export const GroupDetailsScreen = ({ route, navigation }: Props) => {
       <View style={s.root}>
         <Aurora />
         <ScreenContainer>
-          <View style={s.centered}><ActivityIndicator size="large" color={theme.colors.primary} /></View>
+          <View style={s.centered}><ActivityIndicator size="large" color={colors.primary} /></View>
         </ScreenContainer>
       </View>
     );
@@ -159,32 +161,32 @@ export const GroupDetailsScreen = ({ route, navigation }: Props) => {
   );
 };
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.colors.background },
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
   inner: { flex: 1 },
   content: { paddingBottom: theme.spacing.xxxl },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   backBtn: { paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.xl, paddingBottom: theme.spacing.sm, ...Platform.select({ web: { paddingTop: theme.spacing.lg } }) },
-  backText: { ...theme.typography.body, color: theme.colors.primary, fontWeight: '700' },
+  backText: { ...theme.typography.body, color: colors.primary, fontWeight: '700' },
   heroWrap: { alignItems: 'center', paddingVertical: theme.spacing.md },
-  headerGlow: { position: 'absolute', top: 4, width: 140, height: 140, borderRadius: 70, backgroundColor: theme.colors.primary + '1A', ...Platform.select({ web: { filter: 'blur(24px)' } as any }) },
-  headerCircle: { width: Platform.select({ web: 76, default: 96 }), height: Platform.select({ web: 76, default: 96 }), borderRadius: Platform.select({ web: 38, default: 48 }), backgroundColor: theme.colors.primaryLight + '33', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: theme.colors.primary + '55', marginBottom: theme.spacing.md },
-  headerLetter: { fontFamily: theme.fonts.display, fontSize: Platform.select({ web: 30, default: 38 }), color: theme.colors.primaryDark },
-  eyebrow: { fontFamily: theme.fonts.displayMedium, fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: theme.colors.accent, marginBottom: 4 },
-  groupName: { fontFamily: theme.fonts.display, fontSize: Platform.OS === 'web' ? 30 : 26, lineHeight: Platform.OS === 'web' ? 34 : 30, color: theme.colors.primaryDark, letterSpacing: -0.8, textAlign: 'center', paddingHorizontal: theme.spacing.lg },
-  groupMeta: { ...theme.typography.caption, color: theme.colors.textSecondary, marginTop: 4 },
+  headerGlow: { position: 'absolute', top: 4, width: 140, height: 140, borderRadius: 70, backgroundColor: colors.primary + '1A', ...Platform.select({ web: { filter: 'blur(24px)' } as any }) },
+  headerCircle: { width: Platform.select({ web: 76, default: 96 }), height: Platform.select({ web: 76, default: 96 }), borderRadius: Platform.select({ web: 38, default: 48 }), backgroundColor: colors.primaryLight + '33', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.primary + '55', marginBottom: theme.spacing.md },
+  headerLetter: { fontFamily: theme.fonts.display, fontSize: Platform.select({ web: 30, default: 38 }), color: colors.primaryDark },
+  eyebrow: { fontFamily: theme.fonts.displayMedium, fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: colors.accent, marginBottom: 4 },
+  groupName: { fontFamily: theme.fonts.display, fontSize: Platform.OS === 'web' ? 30 : 26, lineHeight: Platform.OS === 'web' ? 34 : 30, color: colors.primaryDark, letterSpacing: -0.8, textAlign: 'center', paddingHorizontal: theme.spacing.lg },
+  groupMeta: { ...theme.typography.caption, color: colors.textSecondary, marginTop: 4 },
   section: { paddingHorizontal: theme.spacing.lg, marginTop: theme.spacing.lg },
-  sectionTitle: { fontFamily: theme.fonts.displayMedium, fontSize: 12, letterSpacing: 2.5, textTransform: 'uppercase', color: theme.colors.textSecondary, marginBottom: theme.spacing.sm },
+  sectionTitle: { fontFamily: theme.fonts.displayMedium, fontSize: 12, letterSpacing: 2.5, textTransform: 'uppercase', color: colors.textSecondary, marginBottom: theme.spacing.sm },
   memberRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.82)', borderRadius: theme.borderRadius.lg, padding: theme.spacing.md, marginBottom: theme.spacing.sm, borderWidth: 1, borderColor: 'rgba(108,92,231,0.12)', ...theme.shadows.sm, ...Platform.select({ web: { backdropFilter: 'blur(10px)' } as any }) },
-  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: theme.colors.primaryLight + '33', alignItems: 'center', justifyContent: 'center', marginRight: theme.spacing.md, borderWidth: 1.5, borderColor: theme.colors.primary + '33' },
-  avatarLetter: { fontFamily: theme.fonts.display, fontSize: 16, color: theme.colors.primaryDark },
-  memberName: { ...theme.typography.body, color: theme.colors.textPrimary, fontWeight: '600' },
+  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primaryLight + '33', alignItems: 'center', justifyContent: 'center', marginRight: theme.spacing.md, borderWidth: 1.5, borderColor: colors.primary + '33' },
+  avatarLetter: { fontFamily: theme.fonts.display, fontSize: 16, color: colors.primaryDark },
+  memberName: { ...theme.typography.body, color: colors.textPrimary, fontWeight: '600' },
   planCard: { backgroundColor: 'rgba(255,255,255,0.82)', borderRadius: theme.borderRadius.lg, padding: theme.spacing.lg, marginBottom: theme.spacing.sm, borderWidth: 1, borderColor: 'rgba(108,92,231,0.14)', ...theme.shadows.sm, ...Platform.select({ web: { backdropFilter: 'blur(10px)' } as any }) },
   planCardPast: { opacity: 0.75 },
-  planTitle: { fontFamily: theme.fonts.displayMedium, fontSize: 16, color: theme.colors.textPrimary, marginBottom: 4 },
-  planMeta: { ...theme.typography.caption, color: theme.colors.textSecondary },
-  createBtn: { marginHorizontal: theme.spacing.lg, marginTop: theme.spacing.xl, backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.full, paddingVertical: theme.spacing.md, alignItems: 'center', ...theme.shadows.md },
+  planTitle: { fontFamily: theme.fonts.displayMedium, fontSize: 16, color: colors.textPrimary, marginBottom: 4 },
+  planMeta: { ...theme.typography.caption, color: colors.textSecondary },
+  createBtn: { marginHorizontal: theme.spacing.lg, marginTop: theme.spacing.xl, backgroundColor: colors.primary, borderRadius: theme.borderRadius.full, paddingVertical: theme.spacing.md, alignItems: 'center', ...theme.shadows.md },
   btnDisabled: { opacity: 0.5 },
-  createBtnText: { color: theme.colors.textInverse, fontWeight: '800', fontSize: 16, letterSpacing: 0.3 },
-  errorBanner: { ...theme.typography.caption, color: theme.colors.error, textAlign: 'center', padding: theme.spacing.sm, backgroundColor: theme.colors.error + '11', marginHorizontal: theme.spacing.lg, marginBottom: theme.spacing.md },
+  createBtnText: { color: colors.textInverse, fontWeight: '800', fontSize: 16, letterSpacing: 0.3 },
+  errorBanner: { ...theme.typography.caption, color: colors.error, textAlign: 'center', padding: theme.spacing.sm, backgroundColor: colors.error + '11', marginHorizontal: theme.spacing.lg, marginBottom: theme.spacing.md },
 });

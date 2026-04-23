@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, Image, Platform, TextInput, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { theme } from '../theme';
+import { theme, useTheme, useThemeColors, type ThemeColors, type ThemeMode } from '../theme';
 import { useAuthStore } from '../stores/authStore';
 import { useFriendsStore } from '../stores/friendsStore';
 import { useEventsStore } from '../stores/eventsStore';
@@ -10,6 +10,8 @@ import { ScreenContainer } from '../components/ScreenContainer';
 import { Aurora, FadeIn, Stagger, Pressable, Tilt } from '../motion';
 
 export const ProfileScreen = () => {
+  const colors = useThemeColors();
+  const s = React.useMemo(() => makeStyles(colors), [colors]);
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const updateProfile = useAuthStore((s) => s.updateProfile);
@@ -181,7 +183,7 @@ export const ProfileScreen = () => {
                 value={localQuery}
                 onChangeText={setLocalQuery}
                 placeholder="Найти друзей по имени или @username"
-                placeholderTextColor={theme.colors.textTertiary}
+                placeholderTextColor={colors.textTertiary}
                 autoCorrect={false}
                 autoCapitalize="none"
               />
@@ -230,7 +232,7 @@ export const ProfileScreen = () => {
                 <Text style={s.sectionHeader}>Мои друзья</Text>
               </View>
             ) : null}
-            {listLoading ? <ActivityIndicator size="large" color={theme.colors.primary} style={s.loader} /> : (
+            {listLoading ? <ActivityIndicator size="large" color={colors.primary} style={s.loader} /> : (
               <FlatList
                 data={data}
                 keyExtractor={(u) => u.id}
@@ -346,7 +348,7 @@ export const ProfileScreen = () => {
                     value={editName}
                     onChangeText={setEditName}
                     placeholder="Имя"
-                    placeholderTextColor={theme.colors.textTertiary}
+                    placeholderTextColor={colors.textTertiary}
                     autoFocus
                     editable={!savingProfile}
                   />
@@ -358,7 +360,7 @@ export const ProfileScreen = () => {
                     value={editUsername}
                     onChangeText={setEditUsername}
                     placeholder="username"
-                    placeholderTextColor={theme.colors.textTertiary}
+                    placeholderTextColor={colors.textTertiary}
                     autoCapitalize="none"
                     autoCorrect={false}
                     editable={!savingProfile}
@@ -371,7 +373,7 @@ export const ProfileScreen = () => {
                   </Pressable>
                   <Pressable style={s.editSaveBtn} onPress={handleSaveProfile} activeScale={0.9} disabled={savingProfile}>
                     {savingProfile ? (
-                      <ActivityIndicator size="small" color={theme.colors.textInverse} />
+                      <ActivityIndicator size="small" color={colors.textInverse} />
                     ) : (
                       <Text style={s.editSaveBtnText}>Сохранить</Text>
                     )}
@@ -407,8 +409,11 @@ export const ProfileScreen = () => {
                   </View>
                 </Pressable>
               </Tilt>
+              <View style={s.menuItem}>
+                <ThemeModeToggle />
+              </View>
               <Pressable style={s.menuItem} onPress={logout} activeScale={0.97}>
-                <Text style={[s.menuText, { color: theme.colors.error, fontWeight: '700' }]}>Выйти</Text>
+                <Text style={[s.menuText, { color: colors.error, fontWeight: '700' }]}>Выйти</Text>
               </Pressable>
             </View>
           </Stagger>
@@ -418,27 +423,88 @@ export const ProfileScreen = () => {
   );
 };
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.colors.background },
+const MODE_OPTIONS: { value: ThemeMode; label: string }[] = [
+  { value: 'system', label: 'Системная' },
+  { value: 'light', label: 'Светлая' },
+  { value: 'dark', label: 'Тёмная' },
+];
+
+const ThemeModeToggle = () => {
+  const colors = useThemeColors();
+  const { mode, setMode } = useTheme();
+  const s = React.useMemo(() => makeToggleStyles(colors), [colors]);
+  return (
+    <View style={s.wrap}>
+      <Text style={s.label}>Тема</Text>
+      <View style={s.segmented}>
+        {MODE_OPTIONS.map((opt) => {
+          const active = mode === opt.value;
+          return (
+            <Pressable
+              key={opt.value}
+              style={[s.segment, active && s.segmentActive]}
+              onPress={() => setMode(opt.value)}
+              activeScale={0.95}
+            >
+              <Text style={[s.segmentText, active && s.segmentTextActive]}>{opt.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+};
+
+const makeToggleStyles = (colors: ThemeColors) => StyleSheet.create({
+  wrap: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: theme.spacing.md },
+  label: { ...theme.typography.body, color: colors.textPrimary, fontWeight: '600' },
+  segmented: {
+    flexDirection: 'row',
+    borderRadius: theme.borderRadius.full,
+    backgroundColor: colors.surfaceAlt,
+    padding: 3,
+    gap: 2,
+  },
+  segment: {
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: 6,
+    borderRadius: theme.borderRadius.full,
+  },
+  segmentActive: {
+    backgroundColor: colors.primary,
+    ...theme.shadows.sm,
+  },
+  segmentText: {
+    ...theme.typography.captionBold,
+    color: colors.textSecondary,
+    fontWeight: '700',
+  },
+  segmentTextActive: {
+    color: colors.textInverse,
+  },
+});
+
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
   inner: { flex: 1, ...Platform.select({ web: { paddingTop: theme.spacing.lg } }) },
   avatarWrap: { alignItems: 'center', justifyContent: 'center', marginTop: Platform.select({ web: theme.spacing.xl, default: theme.spacing.xxxl }), marginBottom: theme.spacing.md },
-  avatarGlow: { position: 'absolute', width: Platform.select({ web: 112, default: 132 }), height: Platform.select({ web: 112, default: 132 }), borderRadius: Platform.select({ web: 56, default: 66 }), backgroundColor: theme.colors.primary + '18', ...Platform.select({ web: { filter: 'blur(18px)' } as any }) },
-  avatarCircle: { width: Platform.select({ web: 72, default: 88 }), height: Platform.select({ web: 72, default: 88 }), borderRadius: Platform.select({ web: 36, default: 44 }), backgroundColor: theme.colors.primaryLight + '33', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: theme.colors.primary + '55' },
-  avatarLetter: { fontFamily: theme.fonts.display, fontSize: Platform.select({ web: 28, default: 34 }), color: theme.colors.primaryDark },
-  eyebrowCenter: { fontFamily: theme.fonts.displayMedium, fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: theme.colors.accent, textAlign: 'center', marginBottom: 4 },
-  name: { fontFamily: theme.fonts.display, fontSize: Platform.OS === 'web' ? 28 : 26, lineHeight: Platform.OS === 'web' ? 32 : 30, color: theme.colors.primaryDark, textAlign: 'center', letterSpacing: -0.8, marginBottom: theme.spacing.xs },
-  editPen: { fontFamily: undefined, fontSize: 16, color: theme.colors.primary },
-  username: { ...theme.typography.caption, color: theme.colors.textTertiary, textAlign: 'center', marginBottom: theme.spacing.lg },
+  avatarGlow: { position: 'absolute', width: Platform.select({ web: 112, default: 132 }), height: Platform.select({ web: 112, default: 132 }), borderRadius: Platform.select({ web: 56, default: 66 }), backgroundColor: colors.primary + '18', ...Platform.select({ web: { filter: 'blur(18px)' } as any }) },
+  avatarCircle: { width: Platform.select({ web: 72, default: 88 }), height: Platform.select({ web: 72, default: 88 }), borderRadius: Platform.select({ web: 36, default: 44 }), backgroundColor: colors.primaryLight + '33', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.primary + '55' },
+  avatarLetter: { fontFamily: theme.fonts.display, fontSize: Platform.select({ web: 28, default: 34 }), color: colors.primaryDark },
+  eyebrowCenter: { fontFamily: theme.fonts.displayMedium, fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: colors.accent, textAlign: 'center', marginBottom: 4 },
+  name: { fontFamily: theme.fonts.display, fontSize: Platform.OS === 'web' ? 28 : 26, lineHeight: Platform.OS === 'web' ? 32 : 30, color: colors.primaryDark, textAlign: 'center', letterSpacing: -0.8, marginBottom: theme.spacing.xs },
+  editPen: { fontFamily: undefined, fontSize: 16, color: colors.primary },
+  username: { ...theme.typography.caption, color: colors.textTertiary, textAlign: 'center', marginBottom: theme.spacing.lg },
   editBlock: { paddingHorizontal: theme.spacing.lg, gap: theme.spacing.sm, marginBottom: theme.spacing.md },
   editRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: theme.spacing.xs, marginBottom: theme.spacing.xs },
-  editInput: { ...theme.typography.body, color: theme.colors.textPrimary, borderBottomWidth: 1, borderBottomColor: theme.colors.primary, paddingBottom: 2, minWidth: 180, textAlign: 'center' },
-  editPrefix: { ...theme.typography.body, color: theme.colors.textTertiary, fontWeight: '600' },
-  editError: { ...theme.typography.caption, color: theme.colors.error, textAlign: 'center' },
+  editInput: { ...theme.typography.body, color: colors.textPrimary, borderBottomWidth: 1, borderBottomColor: colors.primary, paddingBottom: 2, minWidth: 180, textAlign: 'center' },
+  editPrefix: { ...theme.typography.body, color: colors.textTertiary, fontWeight: '600' },
+  editError: { ...theme.typography.caption, color: colors.error, textAlign: 'center' },
   editActions: { flexDirection: 'row', justifyContent: 'center', gap: theme.spacing.sm, marginTop: theme.spacing.xs },
-  editCancelBtn: { paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.xs, borderRadius: theme.borderRadius.full, borderWidth: 1, borderColor: theme.colors.borderLight },
-  editCancelBtnText: { ...theme.typography.captionBold, color: theme.colors.textSecondary, fontWeight: '700' },
-  editSaveBtn: { backgroundColor: theme.colors.primary, paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.xs, borderRadius: theme.borderRadius.full, alignItems: 'center', justifyContent: 'center', minWidth: 110, ...theme.shadows.sm },
-  editSaveBtnText: { color: theme.colors.textInverse, fontSize: 14, fontWeight: '800' },
+  editCancelBtn: { paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.xs, borderRadius: theme.borderRadius.full, borderWidth: 1, borderColor: colors.borderLight },
+  editCancelBtnText: { ...theme.typography.captionBold, color: colors.textSecondary, fontWeight: '700' },
+  editSaveBtn: { backgroundColor: colors.primary, paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.xs, borderRadius: theme.borderRadius.full, alignItems: 'center', justifyContent: 'center', minWidth: 110, ...theme.shadows.sm },
+  editSaveBtnText: { color: colors.textInverse, fontSize: 14, fontWeight: '800' },
   menu: { width: '100%', paddingHorizontal: theme.spacing.lg, gap: theme.spacing.sm, marginTop: theme.spacing.sm },
   menuItem: {
     backgroundColor: 'rgba(255,255,255,0.82)',
@@ -452,46 +518,46 @@ const s = StyleSheet.create({
     alignItems: 'center',
     ...Platform.select({ web: { backdropFilter: 'blur(10px)' } as any }),
   },
-  menuText: { ...theme.typography.body, color: theme.colors.textPrimary, fontWeight: '600' },
+  menuText: { ...theme.typography.body, color: colors.textPrimary, fontWeight: '600' },
   menuRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flex: 1 },
-  badgePill: { backgroundColor: theme.colors.primaryLight + '22', borderRadius: theme.borderRadius.full, paddingHorizontal: theme.spacing.sm, paddingVertical: 2, minWidth: 24, alignItems: 'center' },
+  badgePill: { backgroundColor: colors.primaryLight + '22', borderRadius: theme.borderRadius.full, paddingHorizontal: theme.spacing.sm, paddingVertical: 2, minWidth: 24, alignItems: 'center' },
   badgeGroup: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
-  badgeAlert: { backgroundColor: theme.colors.accent + 'cc', borderRadius: theme.borderRadius.full, paddingHorizontal: theme.spacing.sm, paddingVertical: 2, minWidth: 24, alignItems: 'center' },
-  badgeAlertText: { ...theme.typography.captionBold, color: theme.colors.textInverse, fontWeight: '800' },
-  menuBadge: { ...theme.typography.captionBold, color: theme.colors.primary, fontWeight: '800' },
+  badgeAlert: { backgroundColor: colors.accent + 'cc', borderRadius: theme.borderRadius.full, paddingHorizontal: theme.spacing.sm, paddingVertical: 2, minWidth: 24, alignItems: 'center' },
+  badgeAlertText: { ...theme.typography.captionBold, color: colors.textInverse, fontWeight: '800' },
+  menuBadge: { ...theme.typography.captionBold, color: colors.primary, fontWeight: '800' },
   requestsBlock: { paddingHorizontal: theme.spacing.lg, gap: theme.spacing.xs, marginBottom: theme.spacing.sm },
-  sectionHeader: { fontFamily: theme.fonts.displayMedium, fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: theme.colors.accent, marginTop: theme.spacing.sm, marginBottom: theme.spacing.xs },
+  sectionHeader: { fontFamily: theme.fonts.displayMedium, fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: colors.accent, marginTop: theme.spacing.sm, marginBottom: theme.spacing.xs },
   requestActions: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
-  requestAccept: { backgroundColor: theme.colors.primary, paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.xs, borderRadius: theme.borderRadius.full, ...theme.shadows.sm },
-  requestAcceptText: { ...theme.typography.captionBold, color: theme.colors.textInverse, fontWeight: '800' },
-  requestDecline: { borderWidth: 1.5, borderColor: theme.colors.error + '66', paddingHorizontal: theme.spacing.sm, paddingVertical: theme.spacing.xs, borderRadius: theme.borderRadius.full },
-  requestDeclineText: { ...theme.typography.captionBold, color: theme.colors.error, fontWeight: '800' },
+  requestAccept: { backgroundColor: colors.primary, paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.xs, borderRadius: theme.borderRadius.full, ...theme.shadows.sm },
+  requestAcceptText: { ...theme.typography.captionBold, color: colors.textInverse, fontWeight: '800' },
+  requestDecline: { borderWidth: 1.5, borderColor: colors.error + '66', paddingHorizontal: theme.spacing.sm, paddingVertical: theme.spacing.xs, borderRadius: theme.borderRadius.full },
+  requestDeclineText: { ...theme.typography.captionBold, color: colors.error, fontWeight: '800' },
   backBtn: { paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.xl, paddingBottom: theme.spacing.sm, ...Platform.select({ web: { paddingTop: theme.spacing.lg } }) },
-  backText: { ...theme.typography.body, color: theme.colors.primary, fontWeight: '700' },
+  backText: { ...theme.typography.body, color: colors.primary, fontWeight: '700' },
   subHero: { paddingHorizontal: theme.spacing.lg, marginBottom: theme.spacing.md },
-  eyebrow: { fontFamily: theme.fonts.displayMedium, fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: theme.colors.accent, marginBottom: 4 },
-  subHeroTitle: { fontFamily: theme.fonts.display, fontSize: Platform.OS === 'web' ? 32 : 28, lineHeight: Platform.OS === 'web' ? 36 : 32, color: theme.colors.primaryDark, letterSpacing: -1 },
+  eyebrow: { fontFamily: theme.fonts.displayMedium, fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: colors.accent, marginBottom: 4 },
+  subHeroTitle: { fontFamily: theme.fonts.display, fontSize: Platform.OS === 'web' ? 32 : 28, lineHeight: Platform.OS === 'web' ? 36 : 32, color: colors.primaryDark, letterSpacing: -1 },
   list: { paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.xxxl },
   savedCard: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.82)', borderRadius: theme.borderRadius.lg, marginBottom: theme.spacing.sm, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(108,92,231,0.12)', ...theme.shadows.sm, ...Platform.select({ web: { backdropFilter: 'blur(10px)' } as any }) },
   savedImage: { width: Platform.select({ web: 64, default: 80 }), height: Platform.select({ web: 64, default: 80 }) },
   savedBody: { flex: 1, padding: theme.spacing.md, justifyContent: 'center' },
-  savedTitle: { ...theme.typography.bodyBold, color: theme.colors.textPrimary, marginBottom: 2 },
-  savedMeta: { ...theme.typography.caption, color: theme.colors.textTertiary },
+  savedTitle: { ...theme.typography.bodyBold, color: colors.textPrimary, marginBottom: 2 },
+  savedMeta: { ...theme.typography.caption, color: colors.textTertiary },
   friendRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.82)', borderRadius: theme.borderRadius.lg, padding: theme.spacing.md, marginBottom: theme.spacing.sm, borderWidth: 1, borderColor: 'rgba(108,92,231,0.12)', ...theme.shadows.sm, ...Platform.select({ web: { backdropFilter: 'blur(10px)' } as any }) },
-  friendAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.colors.primaryLight + '33', alignItems: 'center', justifyContent: 'center', marginRight: theme.spacing.md, borderWidth: 1.5, borderColor: theme.colors.primary + '33' },
-  friendLetter: { fontFamily: theme.fonts.display, fontSize: 18, color: theme.colors.primaryDark },
+  friendAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primaryLight + '33', alignItems: 'center', justifyContent: 'center', marginRight: theme.spacing.md, borderWidth: 1.5, borderColor: colors.primary + '33' },
+  friendLetter: { fontFamily: theme.fonts.display, fontSize: 18, color: colors.primaryDark },
   friendInfo: { flex: 1 },
-  friendName: { ...theme.typography.bodyBold, color: theme.colors.textPrimary, marginBottom: 2 },
-  friendUsername: { ...theme.typography.caption, color: theme.colors.textTertiary },
+  friendName: { ...theme.typography.bodyBold, color: colors.textPrimary, marginBottom: 2 },
+  friendUsername: { ...theme.typography.caption, color: colors.textTertiary },
   loader: { marginTop: 40 },
-  errorBanner: { ...theme.typography.caption, color: theme.colors.error, textAlign: 'center', padding: theme.spacing.sm, backgroundColor: theme.colors.error + '11', marginHorizontal: theme.spacing.lg, marginBottom: theme.spacing.md },
+  errorBanner: { ...theme.typography.caption, color: colors.error, textAlign: 'center', padding: theme.spacing.sm, backgroundColor: colors.error + '11', marginHorizontal: theme.spacing.lg, marginBottom: theme.spacing.md },
   searchWrap: { flexDirection: 'row', alignItems: 'center', marginHorizontal: theme.spacing.lg, marginBottom: theme.spacing.md, backgroundColor: 'rgba(255,255,255,0.82)', borderRadius: theme.borderRadius.full, borderWidth: 1, borderColor: 'rgba(108,92,231,0.18)', paddingHorizontal: theme.spacing.md, ...theme.shadows.sm, ...Platform.select({ web: { backdropFilter: 'blur(10px)' } as any }) },
-  searchInput: { flex: 1, ...theme.typography.body, color: theme.colors.textPrimary, paddingVertical: Platform.select({ web: theme.spacing.sm, default: theme.spacing.md }), ...Platform.select({ web: { outlineStyle: 'none' } as any }) },
+  searchInput: { flex: 1, ...theme.typography.body, color: colors.textPrimary, paddingVertical: Platform.select({ web: theme.spacing.sm, default: theme.spacing.md }), ...Platform.select({ web: { outlineStyle: 'none' } as any }) },
   searchClear: { paddingHorizontal: theme.spacing.sm, paddingVertical: 4 },
-  searchClearText: { fontSize: 14, color: theme.colors.textTertiary, fontWeight: '700' },
-  friendActionPrimary: { backgroundColor: theme.colors.primary, paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.xs, borderRadius: theme.borderRadius.full, ...theme.shadows.sm },
-  friendActionPrimaryText: { ...theme.typography.captionBold, color: theme.colors.textInverse, fontWeight: '700' },
-  friendActionGhost: { paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.xs, borderRadius: theme.borderRadius.full, borderWidth: 1, borderColor: theme.colors.primary + '55' },
-  friendActionGhostText: { ...theme.typography.captionBold, color: theme.colors.primary, fontWeight: '700' },
+  searchClearText: { fontSize: 14, color: colors.textTertiary, fontWeight: '700' },
+  friendActionPrimary: { backgroundColor: colors.primary, paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.xs, borderRadius: theme.borderRadius.full, ...theme.shadows.sm },
+  friendActionPrimaryText: { ...theme.typography.captionBold, color: colors.textInverse, fontWeight: '700' },
+  friendActionGhost: { paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.xs, borderRadius: theme.borderRadius.full, borderWidth: 1, borderColor: colors.primary + '55' },
+  friendActionGhostText: { ...theme.typography.captionBold, color: colors.primary, fontWeight: '700' },
   friendActionPair: { flexDirection: 'row', gap: theme.spacing.xs },
 });
