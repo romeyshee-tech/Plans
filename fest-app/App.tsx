@@ -1,4 +1,8 @@
 import React from 'react';
+import { initSentry } from './src/utils/sentry';
+
+initSentry();
+
 import { NavigationContainer, createNavigationContainerRef, type LinkingOptions } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -174,9 +178,10 @@ const BootSpinner = () => {
 
 function AppInner() {
   const isAuthenticated = useAuthStore((s: { isAuthenticated: boolean }) => s.isAuthenticated);
+  const restoring = useAuthStore((s: { restoring: boolean }) => s.restoring);
   const [fontsLoaded] = useFonts({ Unbounded_500Medium, Unbounded_700Bold });
 
-  if (!fontsLoaded) return <BootSpinner />;
+  if (!fontsLoaded || restoring) return <BootSpinner />;
   if (!isAuthenticated) return <UnauthenticatedShell />;
   return <AppNavigator />;
 }

@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { randomBytes } from 'crypto';
 import { pool, query } from '../db/pool.js';
 import { insertNotification } from '../db/notifications.js';
+import { track } from '../observability/analytics.js';
 
 function newShareToken(): string {
   return randomBytes(8).toString('hex');
@@ -119,6 +120,17 @@ export async function planRoutes(app: FastifyInstance) {
       }
 
       await client.query('COMMIT');
+      track(userId, 'create_plan', {
+        plan_id: plan.id,
+        activity_type: plan.activity_type,
+        has_confirmed_time: !!confirmed_time,
+        has_confirmed_place: !!confirmed_place_text,
+        participant_count: 1 + others.length,
+        linked_event: !!linked_event_id,
+      });
+      for (const pid of others) {
+        track(userId, 'invite_sent', { plan_id: plan.id, invitee_id: pid, source: 'create_plan' });
+      }
       return reply.code(201).send({ plan: await getPlanFull(plan.id) });
     } catch (err) {
       await client.query('ROLLBACK');
@@ -226,6 +238,8 @@ export async function planRoutes(app: FastifyInstance) {
     if (plan.creator_id !== userId) return reply.code(403).send({ code: 'FORBIDDEN', message: 'Only creator can cancel' });
     if (!['active', 'finalized'].includes(plan.lifecycle_state)) return reply.code(400).send({ code: 'INVALID_STATE', message: 'Can only cancel active or finalized plans' });
     await query("UPDATE plans SET lifecycle_state = 'cancelled', updated_at = now() WHERE id = $1", [id]);
+    (app as any).wsEmit(`plan:${id}`, 'plan.cancelled', { plan_id: id });
+    track(userId, 'plan_cancelled', { plan_id: id });
     return { plan: await getPlanFull(id) };
   });
 
@@ -237,6 +251,8 @@ export async function planRoutes(app: FastifyInstance) {
     if (plan.creator_id !== userId) return reply.code(403).send({ code: 'FORBIDDEN', message: 'Only creator can complete' });
     if (!['finalized', 'active'].includes(plan.lifecycle_state)) return reply.code(400).send({ code: 'INVALID_STATE', message: 'Can only complete finalized or active plans' });
     await query("UPDATE plans SET lifecycle_state = 'completed', updated_at = now() WHERE id = $1", [id]);
+    (app as any).wsEmit(`plan:${id}`, 'plan.completed', { plan_id: id });
+    track(userId, 'plan_completed', { plan_id: id });
     return { plan: await getPlanFull(id) };
   });
 
@@ -275,16 +291,19 @@ export async function planRoutes(app: FastifyInstance) {
     await query("INSERT INTO plan_participants (plan_id, user_id, status) VALUES ($1, $2, 'invited')", [planId, inviteeId]);
     await query("INSERT INTO invitations (type, target_id, inviter_id, invitee_id, status) VALUES ('plan', $1, $2, $3, 'pending')", [planId, userId, inviteeId]);
     await insertNotification(inviteeId, 'plan_invite', { plan_id: planId, inviter_name: inviterName });
+    track(userId, 'invite_sent', { plan_id: planId, invitee_id: inviteeId, source: 'invite_participant' });
 
     const r = (await query(
       `SELECT pp.*, u.id as u_id, u.phone as u_phone, u.name as u_name, u.username as u_username, u.avatar_url as u_avatar, u.created_at as u_created
        FROM plan_participants pp JOIN users u ON pp.user_id = u.id WHERE pp.plan_id = $1 AND pp.user_id = $2`,
       [planId, inviteeId]
     )).rows[0];
-    return { participant: {
+    const participant = {
       id: r.id, plan_id: r.plan_id, user_id: r.user_id, status: r.status, joined_at: r.joined_at,
       user: { id: r.u_id, phone: r.u_phone, name: r.u_name, username: r.u_username, avatar_url: r.u_avatar, created_at: r.u_created },
-    }};
+    };
+    (app as any).wsEmit(`plan:${planId}`, 'plan.participant.added', { plan_id: planId, participant });
+    return { participant };
   });
 
   app.patch('/:planId/participants/:uid', { preHandler: [(app as any).authenticate] }, async (request, reply) => {
@@ -301,10 +320,12 @@ export async function planRoutes(app: FastifyInstance) {
        FROM plan_participants pp JOIN users u ON pp.user_id = u.id WHERE pp.plan_id = $1 AND pp.user_id = $2`,
       [planId, uid]
     )).rows[0];
-    return { participant: {
+    const participant = {
       id: r.id, plan_id: r.plan_id, user_id: r.user_id, status: r.status, joined_at: r.joined_at,
       user: { id: r.u_id, phone: r.u_phone, name: r.u_name, username: r.u_username, avatar_url: r.u_avatar, created_at: r.u_created },
-    }};
+    };
+    (app as any).wsEmit(`plan:${planId}`, 'plan.participant.updated', { plan_id: planId, participant });
+    return { participant };
   });
 
   app.delete('/:planId/participants/:uid', { preHandler: [(app as any).authenticate] }, async (request, reply) => {
@@ -314,6 +335,7 @@ export async function planRoutes(app: FastifyInstance) {
     if (!plan) return reply.code(404).send({ code: 'NOT_FOUND', message: 'Plan not found' });
     if (uid !== userId && plan.creator_id !== userId) return reply.code(403).send({ code: 'FORBIDDEN', message: 'Cannot remove this participant' });
     await query('DELETE FROM plan_participants WHERE plan_id = $1 AND user_id = $2', [planId, uid]);
+    (app as any).wsEmit(`plan:${planId}`, 'plan.participant.removed', { plan_id: planId, user_id: uid });
     return reply.code(204).send();
   });
 
@@ -395,6 +417,7 @@ export async function planRoutes(app: FastifyInstance) {
         status: proposal.status, created_at: proposal.created_at instanceof Date ? proposal.created_at.toISOString() : proposal.created_at,
         votes: [],
       });
+      track(userId, 'proposal_created', { plan_id: id, proposal_id: proposal.id, type });
       return reply.code(201).send({ proposal });
     } catch (err) {
       await client.query('ROLLBACK');
@@ -440,6 +463,7 @@ export async function planRoutes(app: FastifyInstance) {
       action: 'added', vote_id: vote.id,
       created_at: vote.created_at instanceof Date ? vote.created_at.toISOString() : vote.created_at,
     });
+    track(userId, 'vote_cast', { plan_id: id, proposal_id: proposalId, proposal_type: proposal.type });
     return { vote };
   });
 
@@ -531,6 +555,11 @@ export async function planRoutes(app: FastifyInstance) {
       await client.query('COMMIT');
       const fullPlan = await getPlanFull(id);
       (app as any).wsEmit(`plan:${id}`, 'plan.finalized', {
+        plan_id: id,
+        place_proposal_id: place_proposal_id || null,
+        time_proposal_id: time_proposal_id || null,
+      });
+      track(userId, 'plan_finalized', {
         plan_id: id,
         place_proposal_id: place_proposal_id || null,
         time_proposal_id: time_proposal_id || null,
