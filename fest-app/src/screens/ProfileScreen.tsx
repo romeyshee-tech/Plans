@@ -348,7 +348,7 @@ export const ProfileScreen = () => {
                     value={editName}
                     onChangeText={setEditName}
                     placeholder="Имя"
-                    placeholderTextColor={theme.colors.textTertiary}
+                    placeholderTextColor={colors.textTertiary}
                     autoFocus
                     editable={!savingProfile}
                   />
@@ -360,7 +360,7 @@ export const ProfileScreen = () => {
                     value={editUsername}
                     onChangeText={setEditUsername}
                     placeholder="username"
-                    placeholderTextColor={theme.colors.textTertiary}
+                    placeholderTextColor={colors.textTertiary}
                     autoCapitalize="none"
                     autoCorrect={false}
                     editable={!savingProfile}
@@ -373,7 +373,7 @@ export const ProfileScreen = () => {
                   </Pressable>
                   <Pressable style={s.editSaveBtn} onPress={handleSaveProfile} activeScale={0.9} disabled={savingProfile}>
                     {savingProfile ? (
-                      <ActivityIndicator size="small" color={theme.colors.textInverse} />
+                      <ActivityIndicator size="small" color={colors.textInverse} />
                     ) : (
                       <Text style={s.editSaveBtnText}>Сохранить</Text>
                     )}
