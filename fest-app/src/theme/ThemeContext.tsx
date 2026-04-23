@@ -1,5 +1,5 @@
 import React from 'react';
-import { useColorScheme } from 'react-native';
+import { Platform, useColorScheme } from 'react-native';
 import { lightColors, darkColors, type ThemeColors, type ThemeMode, type ResolvedMode } from './palettes';
 import { loadThemeMode, saveThemeMode } from '../utils/themeStorage';
 
@@ -37,6 +37,19 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     mode === 'system' ? (system === 'dark' ? 'dark' : 'light') : mode;
 
   const colors = resolved === 'dark' ? darkColors : lightColors;
+
+  // On web, paint the resolved background onto <html> / <body> so areas
+  // outside the 600px ScreenContainer column (and the browser-native canvas
+  // visible during overscroll) match the active palette. Without this, users
+  // with `prefers-color-scheme: dark` see the browser's dark canvas bleed
+  // through the transparent root and the light-mode app looks like white
+  // islands on a dark page.
+  React.useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    if (typeof document === 'undefined') return;
+    document.documentElement.style.backgroundColor = colors.background;
+    document.body.style.backgroundColor = colors.background;
+  }, [colors.background]);
 
   const setMode = React.useCallback((next: ThemeMode) => {
     setModeState(next);
