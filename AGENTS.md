@@ -78,7 +78,7 @@ Expo + React Native + TypeScript frontend backed by Fastify + PostgreSQL API. Ba
 - **Channels**: `user:{userId}` (notifications), `plan:{planId}` (messages, proposals, votes, lifecycle)
 - **Frontend**: `ws.ts` singleton with reconnect + resync; `wsHandler.ts` routes to stores
 - **Dedup**: `pushMessage` uses `client_message_id` reconciliation + ID check; `pushProposal` uses ID check; `pushVote` filters optimistic votes
-- **Missing WS events**: `plan.cancelled`, `plan.completed`, participant changes do NOT emit WS — other participants must refresh manually
+- **Lifecycle + participant events**: `plan.cancelled`, `plan.completed`, `plan.participant.added`, `plan.participant.updated`, `plan.participant.removed` are all emitted since PR #3; `wsHandler.ts` refetches the affected plan on each
 
 ### Zustand stores (7)
 

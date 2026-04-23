@@ -848,12 +848,10 @@ Tables: messages (already exists)
 Real-time implementation:
 - Backend: `@fastify/websocket` at `/api/ws` — auth via JWT, subscribe/unsubscribe channels
 - Channels: `user:{userId}` (notifications), `plan:{planId}` (messages, proposals, votes, lifecycle)
-- WS events: `plan.message.created`, `plan.proposal.created`, `plan.vote.changed`, `plan.finalized`, `plan.unfinalized`, `notification.created`
+- WS events: `plan.message.created`, `plan.proposal.created`, `plan.vote.changed`, `plan.finalized`, `plan.unfinalized`, `plan.cancelled`, `plan.completed`, `plan.participant.added`, `plan.participant.updated`, `plan.participant.removed`, `notification.created`
 - Frontend: singleton WS client with reconnect + resync + heartbeat/stale detection
 - Dedup: `client_message_id` reconciliation for messages, ID check for proposals, optimistic vote filtering
 - REST remains source of truth — WS is push-only, no transactional writes
-
-Missing WS events (not yet emitted): `plan.cancelled`, `plan.completed`, participant add/remove/update
 
 Optimistic message send with server confirmation. No message edit/delete in MVP.
 
