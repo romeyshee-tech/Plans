@@ -1,161 +1,167 @@
-# Session Handoff — 2026-04-22
+# Handoff — post PR #3–5 (beta hardening)
 
-This document is the handoff from Devin session
-[`9abdd80a796b4e5db52ac52c7d1ab56a`](https://app.devin.ai/sessions/9abdd80a796b4e5db52ac52c7d1ab56a)
-to the next agent picking up work on this repo. It captures **what was
-delivered in this session, what is next, and the gotchas you will hit if
-you try to reproduce the environment from a fresh fork**. Read it before
-touching anything.
-
----
+This is the **current** handoff doc. The previous revision referenced a
+different org (`magtophard-ai`) and a different set of open PRs; it is
+fully superseded by this one.
 
 ## TL;DR
 
-- **Delivered & merged**: PR #1 (friends pending/accept flow + `friend_request` notifications) and PR #2 (plan share link + `fest://p/:token` deep link).
-- **Open**: PR #3 (in-memory fallback for `pendingJoin` on React Native — fixes a silent breakage on mobile found by Devin Review after PR #2 was merged).
-- **Agreed but not yet coded**: P2 in the roadmap below — onboarding screen (before AuthScreen, flag stored in pendingJoin-style storage) + upgraded empty-state components across ~10 call sites. Scope is frozen; see §4.
-- **Roadmap position**: P0a (friends) ✅, P0b (real OTP) — explicitly skipped by user ("пока не хочу заниматься провайдерами"), P1 (share link) ✅, P2 (onboarding + empty states) ← next.
+- **Repo**: `romeyshee-tech/Plans` — single `master` trunk.
+- **Baseline**: master with PRs #3, #4, #5 merged. MVP core + beta hardening done.
+- **No open PRs.** All roadmap items from the last cycle (profile save + native auth + realtime backfill, security minimum, observability) are shipped.
+- **Do not start dark-theme** (`devin/1776881462-dark-theme`) without a separate decision — see §6.
+- **Next reasonable blocks of work** are in §5, but none are committed scope.
 
 ---
 
-## 1. What was delivered in this session
+## 1. What's in master today
 
-### PR #1 — Friends pending / accept flow
-- URL: <https://github.com/magtophard-ai/Plans/pull/1> (merged)
-- Branch: `devin/1776863429-friends-and-profile` (can be deleted)
-- Backend: `POST /users/friends/:id` now writes `pending` (not auto-accepted); new `PATCH /users/friends/:id` with `{action: accept|decline}`; mutual-POST auto-accepts; `GET /users/friends` supports `direction=incoming|outgoing` and attaches `friendship_status` to each row. Added `friend_request` to the `notification_type` enum via idempotent `ALTER TYPE … ADD VALUE IF NOT EXISTS` in `backend/src/db/migrate.ts`.
-- Frontend: `friendsStore` gained `incomingRequests`/`outgoingRequests`/`acceptFriendRequest`/`declineFriendRequest`. `PublicProfileScreen` renders the four `friendship_status` states. `ProfileScreen` friends drawer shows "Входящие заявки" + pink badge on the menu item. `NotificationsScreen` + `types.NotificationType` handle `friend_request`.
-- Also included a collateral fix: `fest-app/src/api/client.ts` no longer sets `Content-Type: application/json` on bodyless POSTs (Fastify rejected them with "Body cannot be empty…").
-- E2E tested in session (two-browser Masha/Артём, psql spot-checks). Test artifacts are at `test-plan.md` and `test-report.md` (repo root) — see §6 about whether to keep those.
+### Product surface (unchanged from MVP)
+Plan lifecycle (`active → finalized → completed`, plus `cancelled`) with proposals, voting, chat, friends, invitations, groups, notifications, plan share link + `fest://p/:token` deep link. Expo React Native web + native frontend, Fastify 5 + PostgreSQL backend, WebSocket push for realtime.
 
-### PR #2 — Plan share link + deep link
-- URL: <https://github.com/magtophard-ai/Plans/pull/2> (merged)
-- Branch: `devin/1776870581-plan-share-link` (can be deleted)
-- Backend: `plans.share_token` column (8-byte hex, unique, auto-generated on `POST /plans` and `/plans/:id/repeat`); public `GET /api/plans/by-token/:token` (no auth, minimal preview); authed `POST /api/plans/by-token/:token/join` with `SELECT … FOR UPDATE`, idempotent on repeat, 409 on cancelled/completed/full. Added `plan_join_via_link` enum value via the same pattern as PR #1.
-- Frontend: `expo.scheme = "fest"` in `app.json`; `NavigationContainer` linking config routes `fest://p/:token` / `http(s)://<host>/p/:token` → new `PublicPlanScreen`. `PlanDetailsScreen` gains a "Поделиться" button (Web Share API → clipboard fallback → native `Share.share`). `usePendingJoinCapture` stashes tokens from deep links seen while logged-out; after OTP, `NavigationContainer.onReady` auto-navigates to `PublicPlan`.
-- Migration ordering fix: `ALTER TABLE plans ADD COLUMN IF NOT EXISTS share_token` now runs **before** init.sql so `CREATE INDEX idx_plans_share_token` doesn't fail on existing DBs.
-- Test artifacts: `docs/testing/2026-04-22-share-link/`.
+### What the last three PRs added
 
-### PR #3 — pendingJoin native fallback (OPEN)
-- URL: <https://github.com/magtophard-ai/Plans/pull/3>
-- Branch: `devin/1776873215-pendingjoin-native-fallback`
-- Fix for a Devin Review finding on merged PR #2: `fest-app/src/utils/pendingJoin.ts` used `localStorage` with a `typeof localStorage === 'undefined'` guard, silently no-opping on iOS/Android. Added a module-level in-memory mirror so the token survives the OTP window on native. Web behavior unchanged (`localStorage` remains the primary store).
-- Only the `pendingJoin.ts` file changes. Typecheck green.
-- **Still needs user to merge.**
+| PR | What it delivers |
+|---|---|
+| **#3** — profile save + native auth + realtime backfill ([d54710b](https://github.com/romeyshee-tech/Plans/pull/3)) | `PATCH /users/me` wired end-to-end from `ProfileScreen` (was a no-op before). Token persistence moved to `AsyncStorage` on native / `localStorage` on web via `fest-app/src/utils/authStorage.ts` + async `restoring` gate in `authStore` → OTP survives app restart. Backend now emits `plan.cancelled`, `plan.completed`, `plan.participant.added/updated/removed` over WS; `wsHandler.ts` refetches on all of them. Bug fix: invitation accept actually promotes participant `invited → going` and emits the WS event (previous early-return made it dead code). |
+| **#4** — security minimum hardening ([f4694f2](https://github.com/romeyshee-tech/Plans/pull/4)) | OTP rate limits (`/auth/otp/send` 3/min, `/auth/otp/verify` 10/min), per-phone attempt lockout after 5 bad codes (`otp.ts`), global 300/min default. `JWT_SECRET` is required and must be ≥32 chars / not a known dev placeholder when `NODE_ENV=production` — otherwise the server refuses to start. `@fastify/helmet` registered (CSP off — JSON API). `CORS_ORIGIN` env var, comma-separated; empty in prod = no origins allowed. |
+| **#5** — observability ([aaab5b1](https://github.com/romeyshee-tech/Plans/pull/5)) | Sentry on backend (`@sentry/node`) + frontend (`@sentry/react-native`). Both init wrapped in `try/catch` so a bad DSN can't crash startup; `captureError` in `try/catch` so the global Fastify error handler still sends the 500. `flushSentry()` awaited before `process.exit()` so queued events land. PostHog server-side (`posthog-node`) capturing 11 core-loop events — full list in `docs/OBSERVABILITY.md`. All three clients are **no-op when their env var is unset**. |
+
+### Known gotchas that survived the cleanup
+
+1. **`backend/src/db/migrate.ts` ordering** — `001_init.sql` references `share_token` which is added by a later `ALTER TABLE`. `migrate.ts` runs the `ALTER TABLE … ADD COLUMN IF NOT EXISTS share_token` before the main init loop. Don't reorder.
+2. **`fest-app/src/api/client.ts`** must not set `Content-Type: application/json` on bodyless POSTs — Fastify rejects. See `hasBody` branch.
+3. **`pendingJoin.ts` native fallback** — web uses `localStorage`, native uses an in-memory mirror that's enough for the OTP window. Cold-start deep link is re-delivered by `Linking.getInitialURL()`.
+4. **Notification shape mismatch** — WS-pushed notifications use `user_id` / `created_at`, REST-fetched ones are camelized. The `Notification` type matches the WS shape; screens that read REST shape coerce inline.
+5. **`plansStore.error` is one field** — errors from different operations share one banner. No one's complained yet.
+6. **`fest-app/src/fest-animations/**`** is intentionally excluded from the main frontend `tsconfig.json` quality gate. Validate separately with `tsconfig.fest-animations.json` if you touch it.
 
 ---
 
-## 2. Roadmap agreed with user
+## 2. How to run
 
-Order and reasoning are the user's own choices from earlier in the session — don't reorder silently.
+Full instructions: [`docs/RUNBOOK.md`](./RUNBOOK.md). Short version:
 
-| # | Item | Status |
-|---|------|--------|
-| P0a | Friends pending/accept flow + pickers | ✅ merged (PR #1) |
-| P0b | Real SMS OTP provider | ⏭ **explicitly skipped** by the user — keep `OTP_MOCK=true` / code `1111` until they ask |
-| P1 | Plan share link + deep link | ✅ merged (PR #2) + hotfix pending (PR #3) |
-| P2 | Onboarding + human empty states | 🟡 scope agreed, branch created, not yet coded — see §4 |
-| P3 | Sentry + minimal PostHog analytics | pending |
-| P4 | Dark theme (respecting Aurora) | pending |
-| P5 | Basic integration tests (friends-flow, plan lifecycle, invitations, WS) | pending |
-| P6 | Mobile native check + EAS build (dev + preview) | pending |
-| P7 | Push notifications (`plan_invite`, `friend_request`, `plan_finalized`) | pending — only meaningful **after** P1 + P2 are live |
-| P8 | Backfill WS events (`plan.cancelled`, `plan.completed`, participant.*), wire `PATCH /users/me`, add ESLint | pending |
+```bash
+# backend
+cd backend
+npm install --legacy-peer-deps
+npx tsx src/db/migrate.ts
+npx tsx src/db/seed.ts
+npx tsx src/index.ts            # → http://localhost:3001
 
----
+# frontend (web)
+cd fest-app
+npm install --legacy-peer-deps
+npx expo start --web            # → http://localhost:8081
+```
 
-## 3. Current open PRs / branches
+Auth: any phone + code `1111` (mock OTP, see §3).
 
-| Branch | Purpose | State |
-|--------|---------|-------|
-| `master` | Production trunk | PR #1 and PR #2 merged |
-| `devin/1776873215-pendingjoin-native-fallback` | PR #3 (native fallback) | open, awaiting merge |
-| `devin/1776872837-onboarding-empty-states` | P2 work branch (empty — only contains the base master state) | safe to delete and recreate from fresh master |
-| `devin/1776863429-friends-and-profile` | PR #1 (merged) | can be deleted |
-| `devin/1776870581-plan-share-link` | PR #2 (merged) | can be deleted |
+TypeCheck gate:
+```bash
+cd backend   && npx tsc --noEmit
+cd fest-app  && npx tsc --noEmit
+```
+No linter, no `npm test` — `tsc --noEmit` is the gate.
 
 ---
 
-## 4. P2 — scope agreed with user
+## 3. Env / secrets (what exists today)
 
-The user picked option **"До AuthScreen (продать идею до формы)"**. Do not change this without asking.
+### `backend/.env`
+| Variable | Required | Notes |
+|---|---|---|
+| `DATABASE_URL` | yes | Default `postgres://postgres:postgres@localhost:5432/plans`. |
+| `JWT_SECRET` | **yes in prod** | ≥32 chars, not `dev-secret*` / `changeme` / `secret` / empty. Dev default `dev-secret-change-in-prod` is fine locally. |
+| `OTP_CODE` | no | Default `1111`. Mock OTP — see §4. |
+| `PORT` | no | Default `3001`. Frontend expects `3001`. |
+| `NODE_ENV` | no | Set to `production` to enable strict JWT_SECRET + strict CORS. |
+| `CORS_ORIGIN` | no | Comma-separated allowlist. Unset + `NODE_ENV=production` = no origins allowed. Unset + dev = reflect request origin. |
+| `SENTRY_DSN` | no | When unset, Sentry is a no-op. |
+| `POSTHOG_KEY` | no | When unset, analytics is a no-op. |
+| `POSTHOG_HOST` | no | Default `https://eu.i.posthog.com`. |
 
-### Onboarding
-- New `OnboardingScreen` with **3 swipeable slides** (pager):
-  1. "Собирайтесь с друзьями" — core value prop
-  2. "Предложения и голосования" — place/time proposals
-  3. "Делитесь ссылкой" — P1 share link feature
-- Aurora background + FadeIn/SplitText already in the theme; reuse them, don't add new motion components.
-- **Gate**: show on first launch only. Store a boolean flag (same cross-platform pattern as `pendingJoin.ts` after PR #3 — `localStorage` on web, module-level or `AsyncStorage` on native. For a one-time flag `AsyncStorage` is appropriate since we want it to survive app kills; for the in-session token, in-memory is fine).
-- "Пропустить" (top-right, muted) and "Далее"/"Начать" (primary CTA). On completion → set the flag → render `AuthScreen`.
+`.env.example` is the source of truth for available variables.
 
-### Empty states
-- Upgrade `fest-app/src/components/EmptyState.tsx` from `{ text }` only → `{ icon?, title, body?, cta? }` where `cta = { label, onPress }`.
-- Update ~10 call sites with context-aware copy (full list below). Don't add external assets; stick to emojis inside the existing circle.
+### `fest-app/.env`
+| Variable | Required | Notes |
+|---|---|---|
+| `EXPO_PUBLIC_API_BASE_URL` | no | Needed for native / LAN testing (e.g. `http://192.168.0.28:3001/api`). Web defaults to `http://localhost:3001/api`. |
+| `EXPO_PUBLIC_WS_BASE_URL` | no | Derived from API base when unset. |
+| `EXPO_PUBLIC_SENTRY_DSN` | no | Sentry for the app bundle. `EXPO_PUBLIC_*` is baked in at build time. |
 
-| File | Existing text | New copy (approved) |
-|------|---------------|---------------------|
-| `PlansHubScreen.tsx` · Активные | "Нет активных планов" | 🎬 "Пока ничего не запланировано" + "Найдите событие на Главной или создайте свой план" + CTA "Создать план" |
-| `PlansHubScreen.tsx` · Приглашения | "Нет приглашений" | 📨 "Входящих приглашений нет" + "Друзья позовут — тут появятся" |
-| `PlansHubScreen.tsx` · Группы | "Нет групп" | 👥 "Групп пока нет" + "Группы помогают собирать компанию под одно событие" |
-| `PlansHubScreen.tsx` · Прошедшие | "Нет прошедших планов" | 🕰 "История пустая" + "Сюда попадут завершённые планы" |
-| `NotificationsScreen.tsx` | "Нет уведомлений" | 🔔 "Пока тихо" + "Когда друзья позовут или что-то изменится — сообщим" |
-| `ProfileScreen.tsx` · Сохранённые | "Ничего не сохранено" | ⭐ "Нет сохранённых" + "Тапните ☆ на карточке события, чтобы вернуться позже" |
-| `ProfileScreen.tsx` · Друзья (пусто) | "Нет друзей — попробуйте найти кого-то выше" | 🤝 "Пока один" + "Найдите друзей в поиске выше" |
-| `SearchScreen.tsx` (пустой запрос) | (ничего) | 🔍 "Что ищете?" + "Пробуйте названия мест или категории" |
-| `SearchScreen.tsx` (нет результатов) | "Ничего не найдено" | 🫥 "Ничего не нашлось" + "Попробуйте другой запрос" |
-| `HomeScreen.tsx` (пустая категория) | (пустой список) | 🎯 "Нет событий в этой категории" + CTA "Сбросить фильтр" |
-
-Leave `CreatePlanForm.tsx`'s inline `Нет друзей — можно создать план только для себя` as-is (it's a form hint, not a full-screen empty state).
-
-### Out of scope for P2
-- Lottie illustrations (emojis are fine for MVP).
-- Dark-mode variants of empty states (tackle in P4).
-- A/B testing copy (needs PostHog from P3 first).
+Seeded demo users (password-less — OTP `1111`):
+`+79990000000` (Я / me), `+79991111111` (Маша), `+79992222222` (Дима), `+79993333333` (Лена), `+79994444444` (Артём), `+79995555555` (Катя).
 
 ---
 
-## 5. Gotchas found during this session (read before restarting env)
+## 4. Known limitations still open
 
-1. **`backend/src/db/migrate.ts` ordering**: `001_init.sql` contains `CREATE INDEX idx_plans_share_token` on a column that's added by a later `ALTER TABLE`. The fix in PR #2 runs the `ALTER TABLE … ADD COLUMN IF NOT EXISTS share_token` **before** the main init.sql loop. If you see `column "share_token" does not exist` (`42703`) during `npm run db:migrate`, it means someone reordered this.
-2. **`fest-app/src/api/client.ts`** must NOT set `Content-Type: application/json` when `body === undefined`. Fastify 400s any declared-JSON request with an empty body (e.g. `POST /api/plans/by-token/:token/join`). This fix exists on master via PR #1 — don't revert it.
-3. **`pendingJoin.ts` on native**: PR #3 must land, or the mobile deep-link flow silently fails (user ends up on `MainTabs` after OTP instead of `PublicPlanScreen`). Verify `setPendingJoinToken` has an in-memory mirror before building any new feature that depends on pre-auth state.
-4. **Environment**: Postgres runs in docker container `fest-pg` (`postgres:postgres`, db `plans`). Backend default `:3001`, Expo web `:8081`. OTP code is always `1111` (`OTP_MOCK`), no real SMS provider — user explicitly deferred P0b.
-5. **Seed users** for E2E (created by `backend/src/db/seed.ts`):
-   - `+79990000000` → "Я" (`@me`) — creator of plan "Кино в субботу"
-   - `+79994444444` → "Артём" (`@artem`)
-   - `+79991111111` → "Маша"
-   - Plan `72222222-2222-4222-8222-222222222222` has `share_token=bcf69309791cf210`.
+These are not bugs — they're deferred by scope. Before taking one on, check with the user.
 
----
-
-## 6. Test artifacts
-
-- `docs/testing/2026-04-22-share-link/test-plan.md` — 5-case test plan for PR #2 (share → unauth deep link → OTP → join → idempotent rejoin).
-- `docs/testing/2026-04-22-share-link/test-report.md` — executed report with assertions, DB dumps, and recording link.
-- Recording for PR #1 (friends flow): posted inline in the PR #1 comment thread.
-- Recording for PR #2 (share flow): posted inline in the PR #2 comment thread.
-
-If you need to rerun E2E: see `docs/RUNBOOK.md` for backend/Expo startup, then follow the relevant test plan. Two browser windows (A = Masha or `@me`, B = Артём) work well on Expo web.
+- **Mock OTP**. `OTP_CODE=1111` — no SMS provider. User explicitly deferred this ("пока не хочу заниматься провайдерами").
+- **No refresh-token rotation / revocation / blacklist.** `/auth/refresh` issues a new pair but old ones keep working until natural expiry.
+- **No schema validation on request bodies.** Routes cast via `as {...}` — an invalid body can still reach a query. Fastify schema support is there, just not wired up.
+- **No PII scrubbing in Sentry.** The doc warns against putting phones / tokens / raw bodies into `captureError` context; nothing enforces it.
+- **No CI.** No workflows in `.github/`. `tsc --noEmit` is the gate, and it's run locally.
+- **No tests.** There are two manual smoke scripts (`backend/src/tests/e2e-smoke.ts`, `rt2-smoke.ts`), not a test suite.
+- **WebSocket is single-process.** In-memory `Map` — won't survive a horizontally-scaled deploy.
+- **No push notifications.** In-app + WS only.
+- **Web-only tested for each release.** Native flow is wired (including `AsyncStorage` auth persistence) but not walked end-to-end per release.
 
 ---
 
-## 7. How to resume (concrete next steps for the next agent)
+## 5. Sensible next blocks of work (not committed scope)
 
-1. Ensure PR #3 (<https://github.com/magtophard-ai/Plans/pull/3>) is merged. If it isn't, merge it first — otherwise any P2 work that touches auth flow will be tested on broken native code.
-2. Check out fresh master: `git fetch && git checkout master && git pull`.
-3. Delete or re-create the abandoned P2 branch: `git branch -D devin/1776872837-onboarding-empty-states` (it has no commits; the P2 scope in §4 is the source of truth).
-4. Create a new branch for P2 work, e.g. `devin/<timestamp>-onboarding-empty-states`.
-5. Start with the `EmptyState` component upgrade + one call site (e.g. `NotificationsScreen.tsx`) as a sanity check on the new API. Then roll through the remaining ~9 call sites.
-6. Onboarding: put `OnboardingScreen` and a `useOnboardingGate` hook (mirrors the PR #3 pattern: localStorage on web, AsyncStorage on native — this one DOES need AsyncStorage because it must persist across app kills, unlike pendingJoin which only needs the OTP window). Render `<OnboardingScreen />` instead of `<AuthScreen />` from the existing `!isAuthenticated` branch in `App.tsx` when the flag is absent.
-7. Before opening the PR, run `npx tsc --noEmit` in both `backend/` and `fest-app/` (main quality gate; `fest-animations` is excluded from this gate per `tsconfig.json`).
-8. Open PR against master. The repo has no CI workflows — don't wait for checks that don't exist. Link `docs/HANDOFF.md` so reviewers can trace context.
+Pick one at a time, ask before starting. None of these are in-flight.
+
+1. **Real SMS provider.** Replace `sendOtp` stub with a real provider (Twilio / SMS.ru / etc.). Keep `OTP_CODE` path for dev. Biggest beta unlock.
+2. **Refresh-token rotation + revocation.** Track refresh-token family, invalidate on logout, detect replay. Sits between "has refresh endpoint" and "production-grade".
+3. **Request-body schema validation.** Wire Fastify JSON schemas into the 5–6 hottest write routes (`/plans`, `/plans/:id/proposals`, `/invitations/:id`, `/users/me`). Cheap, high-value.
+4. **Device smoke on real iOS/Android.** Walk the golden path (OTP → create plan → invite → chat → vote → finalize) on real devices. First things likely to break: WebSocket reconnect on backgrounding, deep link cold-start behavior, `AsyncStorage` migration.
+5. **PII-safe logging.** A small helper that strips phone numbers and tokens before logging or `captureError` context.
+6. **Beta hardening round 2.** Pagination on `GET /plans`, index audit, N+1 in plan list, dedupe the `plansStore.error` banner.
+7. **Dark theme.** See §6.
 
 ---
 
-## 8. Stuff the user did NOT ask for (do not do unless asked)
+## 6. Branches
 
-- Do not set up a real SMS provider (P0b is explicitly deferred).
-- Do not bypass `AGENTS.md` / `CLAUDE.md` style conventions.
-- Do not force-push to master or amend commits.
-- Do not create new motion components; reuse `Aurora`, `FadeIn`, `Stagger`, `Tilt`, `Pressable`, `SplitText`, `TabIndicator`, `Tab`, `Badge`, `NotificationBell` from `fest-app/src/motion`.
+| Branch | State | Action |
+|---|---|---|
+| `master` | Current trunk, includes PR #3/#4/#5 | — |
+| `devin/1776946313-profile-save-native-auth-ws-backfill` | PR #3 (merged) | safe to delete |
+| `devin/1776946848-security-hardening` | PR #4 (merged) | safe to delete |
+| `devin/1776947143-observability` | PR #5 (merged) | safe to delete |
+| `devin/1776803085-beautiful-ui` | stale, 0 ahead of master | safe to delete |
+| `devin/1776859625-fix-finalize-without-proposal` | stale, 0 ahead | safe to delete |
+| `devin/1776863429-friends-and-profile` | merged earlier (PR #1) | safe to delete |
+| `devin/1776870581-plan-share-link` | merged earlier (PR #2) | safe to delete |
+| `devin/1776873215-pendingjoin-native-fallback` | merged | safe to delete |
+| `devin/1776873461-docs-handoff` | merged | safe to delete |
+| `devin/1776877237-onboarding-empty-states` | merged | safe to delete |
+| `devin/1776881462-dark-theme` | **4 ahead / 0 behind master at time of gap analysis; untested since PR #3–5 landed** | **do not merge without explicit decision** |
+
+**About `dark-theme`** (recorded for context, not a recommendation):
+- 26 files, ~+871/−528 — adds `ThemeContext`, `palettes.ts`, `themeStorage.ts`, migrates every screen to `useThemeColors()`.
+- Product-risk is low (no navigation / store / API changes); conflict-risk is high (touches nearly every screen). PR #3 modified `ProfileScreen` and `authStore` — conflicts guaranteed.
+- Default is light; dark is opt-in. Author noted some glass-surface `rgba(255,255,255,*)` spots still don't re-theme.
+- If someone decides to revive it: rebase on current master first, resolve screen-level conflicts one file at a time, verify contrast on the updated `AuthScreen` / `ProfileScreen`.
+
+---
+
+## 7. For the next agent — what to do first
+
+1. `git fetch && git checkout master && git pull` — you want this revision of the handoff.
+2. Read this file and [`docs/CURRENT_STATUS.md`](./CURRENT_STATUS.md). That's enough to understand the state.
+3. Run the stack (`§2`) end-to-end before touching anything.
+4. Ask the user which item in §5 they want, or propose one with evidence.
+
+What you **should not do** without a separate go-ahead from the user:
+- Start dark-theme.
+- Add a real SMS provider (deferred).
+- Run a big cleanup / refactor across screens or stores.
+- Reorganize `docs/`.
+- Re-introduce a client-side PostHog (explicit non-goal in `docs/OBSERVABILITY.md`).
+- Expand scope beyond the MVP defined in `docs/ProductPlan.md`.
